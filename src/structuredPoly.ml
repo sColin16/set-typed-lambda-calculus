@@ -109,6 +109,22 @@ let build_list_type_pair (kind : recursive_kind) (elt_type : structured_type) =
   let non_empty_list_type = build_non_empty_list_type kind elt_type in
   { full = list_type; non_empty = non_empty_list_type }
 
+(* Converts a list of terms to a term in the lambda calculus representing that list *)
+let rec build_list_term (term_list : term list) =
+  get_typed_term_unsafe (build_list_term_rec term_list)
+
+and build_list_term_rec (term_list : term list) =
+  match term_list with
+  | [] -> empty_list.term
+  | term :: rest ->
+      let rest_list = build_list_term_rec rest in
+      Abstraction
+        [
+          (name_label.stype, cons_label.term);
+          (val_label.stype, term);
+          (next_label.stype, rest_list);
+        ]
+
 let boolean_list_type = build_list_type_pair Inductive bool_type
 
 let polymoprhic_list_type =
@@ -131,4 +147,14 @@ let cons =
                         (next_label.stype, Variable 1);
                       ] );
                 ] );
+          ]))
+
+(* Polymoprhic is_empty function, which checks if a list is empty or not *)
+let is_empty =
+  get_typed_term_unsafe
+    (UnivQuantifier
+       (Abstraction
+          [
+            (polymoprhic_list_type.non_empty, false_lambda.term);
+            (empty_list.stype, true_lambda.term);
           ]))

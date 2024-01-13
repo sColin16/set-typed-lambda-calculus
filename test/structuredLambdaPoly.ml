@@ -1,4 +1,5 @@
 open LambdaCalculus.StructuredPoly
+open LambdaCalculus.StructuredBool
 open LambdaCalculus.Structured.TermOperations.Eval
 open LambdaCalculus.Structured.TermOperations.ValToTerm
 open LambdaCalculus.Structured.TypeOperations.Subtype
@@ -7,6 +8,7 @@ open LambdaCalculus.StructuredHelpers
 open LambdaCalculus.StructuredArithmetic
 open TypeOperations.Create
 open TypeOperations.Context
+open TypeOperations.Intersection
 
 let test (name : string) (result : bool) =
   Printf.printf "%s: %s\n" (if result then "PASS" else "FAIL") name
@@ -15,6 +17,9 @@ let evaluates_to term value = value_to_term (eval term) = value
 
 let is_equivalent_type (t1 : structured_type) (t2 : structured_type) =
   is_subtype t1 t2 && is_subtype t2 t1
+
+let is_strict_subtype (t1 : structured_type) (t2 : structured_type) =
+  is_subtype t1 t2 && not (is_subtype t2 t1)
 
 let applied_poly_identity =
   get_typed_term_unsafe
@@ -104,6 +109,33 @@ let expected_cons_type =
     ]
     recontexted_non_empty.context
 
+(* Represents `forall X. (NonEmptyList X -> false) & (EmptyList -> true)`, the most specific type *)
+let expected_is_empty_type =
+  build_structured_type
+    [
+      UnivQuantification
+        [
+          Intersection
+            [
+              (polymoprhic_list_type.non_empty.union, false_lambda.stype.union);
+              (empty_list.stype.union, true_lambda.stype.union);
+            ];
+        ];
+    ]
+    polymoprhic_list_type.non_empty.context
+
+(* Represents `forall X. List X -> Bool` a more general type for the function *)
+let expected_is_empty_supertype =
+  build_structured_type
+    [
+      UnivQuantification
+        [ Intersection [ (polymoprhic_list_type.full.union, bool_type.union) ] ];
+    ]
+    polymoprhic_list_type.full.context
+
+let simple_boolean_list =
+  build_list_term [ true_lambda.term; false_lambda.term ]
+
 let () =
   test "Polymoprhic identity function type"
     (is_equivalent_type polymoprhic_identity.stype expected_poly_identity_type)
@@ -176,13 +208,38 @@ let () =
     (not (is_subtype empty_list.stype boolean_list_type.non_empty))
 
 let () =
+  test "empty list and boolean non-empty list do not have an intersection"
+    (not (has_intersection empty_list.stype boolean_list_type.non_empty))
+
+let () =
   test "Polymoprhic non-empty list is a subtype of polymoprhic list"
     (is_subtype polymoprhic_list_type.non_empty polymoprhic_list_type.full)
 
 let () =
   test "Polymoprhic cons is a subtype of more general type"
-    (is_subtype cons.stype expected_cons_supertype)
+    (is_strict_subtype cons.stype expected_cons_supertype)
 
 let () =
   test "Polymoprhic cons has expected specific type"
     (is_equivalent_type cons.stype expected_cons_type)
+
+let () =
+  test "Polymoprhic is_empty has expected specific type"
+    (is_equivalent_type is_empty.stype expected_is_empty_type)
+
+let () =
+  test "Polymoprhic is_empty is a subtype of more general type"
+    (is_strict_subtype is_empty.stype expected_is_empty_supertype)
+
+let () =
+  test "Polymoprhic is_empty detects empty list correctly"
+    (evaluates_to
+       (Application (UnivApplication (is_empty.term, bool_type), empty_list.term))
+       true_lambda.term)
+
+let () =
+  test "Polymorphic is_empty detects non-empty list correctly"
+    (evaluates_to
+       (Application
+          (UnivApplication (is_empty.term, bool_type), simple_boolean_list.term))
+       false_lambda.term)
