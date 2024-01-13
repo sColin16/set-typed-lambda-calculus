@@ -5,6 +5,8 @@ open LambdaCalculus.Structured.TypeOperations.Subtype
 open LambdaCalculus.Structured.Metatypes
 open LambdaCalculus.StructuredHelpers
 open LambdaCalculus.StructuredArithmetic
+open TypeOperations.Create
+open TypeOperations.Context
 
 let test (name : string) (result : bool) =
   Printf.printf "%s: %s\n" (if result then "PASS" else "FAIL") name
@@ -54,6 +56,54 @@ let expected_poly_map_applied_type =
            [ Intersection [ (three_bit_type.union, three_bit_type.union) ] ] );
        ])
 
+(* Represents `forall X. X -> List X -> List X`, when final return can be asserted to be non-empty *)
+let expected_cons_supertype =
+  build_structured_type
+    [
+      UnivQuantification
+        [
+          Intersection
+            [
+              ( [ UnivTypeVar 0 ],
+                [
+                  Intersection
+                    [
+                      ( polymoprhic_list_type.full.union,
+                        polymoprhic_list_type.full.union );
+                    ];
+                ] );
+            ];
+        ];
+    ]
+    polymoprhic_list_type.full.context
+
+(* Recontextualize this type so we can use both types in the type below *)
+let recontexted_non_empty =
+  get_type_in_context polymoprhic_list_type.non_empty
+    polymoprhic_list_type.full.context
+
+(* Represents `forall X. X -> List X -> NonEmptyList X` which is the most specific type *)
+let expected_cons_type =
+  build_structured_type
+    [
+      UnivQuantification
+        [
+          Intersection
+            [
+              ( [ UnivTypeVar 0 ],
+                [
+                  Intersection
+                    [
+                      ( polymoprhic_list_type.full.union,
+                        recontexted_non_empty.union );
+                    ];
+                ] );
+            ];
+        ]
+      (* Use the combined context for this type *);
+    ]
+    recontexted_non_empty.context
+
 let () =
   test "Polymoprhic identity function type"
     (is_equivalent_type polymoprhic_identity.stype expected_poly_identity_type)
@@ -68,8 +118,7 @@ let () =
 
 let () =
   test "Polymoprhic double function applied type"
-    (is_equivalent_type applied_poly_double.stype
-       expected_poly_map_applied_type)
+    (is_equivalent_type applied_poly_double.stype expected_poly_map_applied_type)
 
 let () =
   test "Polymorphic quadruple function type"
@@ -113,3 +162,27 @@ let () =
        (Application
           (Application (applied_poly_quadruple.term, decrement.term), five.term))
        one.term)
+
+let () =
+  test "Boolean non-empty list is subtype of boolean list"
+    (is_subtype boolean_list_type.non_empty boolean_list_type.full)
+
+let () =
+  test "empty list is a subtype of boolean list"
+    (is_subtype empty_list.stype boolean_list_type.full)
+
+let () =
+  test "empty list is not a subtype of non empty boolean list"
+    (not (is_subtype empty_list.stype boolean_list_type.non_empty))
+
+let () =
+  test "Polymoprhic non-empty list is a subtype of polymoprhic list"
+    (is_subtype polymoprhic_list_type.non_empty polymoprhic_list_type.full)
+
+let () =
+  test "Polymoprhic cons is a subtype of more general type"
+    (is_subtype cons.stype expected_cons_supertype)
+
+let () =
+  test "Polymoprhic cons has expected specific type"
+    (is_equivalent_type cons.stype expected_cons_type)

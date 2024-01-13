@@ -1,7 +1,9 @@
 open Structured.Metatypes
 open Structured.TermTypes
 open Structured.TypeOperations.Create
+open TypeOperations.Helpers
 open StructuredHelpers
+open StructuredBool
 
 let name_label = get_typed_term_unsafe (Const "Name")
 let val_label = get_typed_term_unsafe (Const "Val")
@@ -56,35 +58,64 @@ let ind_poly_list_context =
       ] );
   ]
 
-(* Serves as a "higher-kinded" type for polymorphic lists*)
-(* TODO: accept a structured type so that the element type can be recursive *)
-let build_ind_list (elt_type : union_type) =
-  let union_type = [ RecTypeVar 0 ] in
-  let context =
-    [
-      ( Inductive,
-        [
-          FIntersection [ (name_label.stype.union, nil_label.stype.union) ];
-          FIntersection
-            [
-              (name_label.stype.union, cons_label.stype.union);
-              (val_label.stype.union, elt_type);
-              (next_label.stype.union, [ RecTypeVar 0 ]);
-            ];
-        ] );
-    ]
+let empty_list =
+  get_typed_term_unsafe (Abstraction [ (name_label.stype, nil_label.term) ])
+
+type list_type_pair = { full : structured_type; non_empty : structured_type }
+
+(** Constructs a list type for a list that holds the given type *)
+let build_list_type (kind : recursive_kind) (elt_type : structured_type) =
+  (* We are going to add a new recursive definition to the context, whose number is the length of the current context *)
+  (* The alternative is getting the elt_type in a new context, but the elt_type is part of that context, so we need to
+     add this recursive definition to the context instead *)
+  let new_rec_num = List.length elt_type.context in
+  let flat_empty_type =
+    flatten_union empty_list.stype.union empty_list.stype.context
   in
-  build_structured_type union_type (build_recursive_context context)
+  (* A node of a list contains the value and the rest of the list *)
+  let flat_non_empty_type =
+    FIntersection
+      [
+        (name_label.stype.union, cons_label.stype.union);
+        (val_label.stype.union, elt_type.union);
+        (next_label.stype.union, [ RecTypeVar new_rec_num ]);
+      ]
+  in
+  let flat_list_type = flat_non_empty_type :: flat_empty_type in
+  let list_recursive_def = build_recursive_def kind flat_list_type in
+  (* Add the new recursive definition to the end of the context so it has the number assigned originally *)
+  let new_context = elt_type.context @ [ list_recursive_def ] in
+  build_structured_type [ RecTypeVar new_rec_num ] new_context
 
-let ind_poly_list_type =
-  build_structured_type ind_poly_list_union
-    (build_recursive_context ind_poly_list_context)
+(** Constructs a non-empty list type type for a list that holds the given type *)
+let build_non_empty_list_type (kind : recursive_kind)
+    (elt_type : structured_type) =
+  let list_type = build_list_type kind elt_type in
+  (* Just assert that at least one node exists containing a value and pointing to a possible empty list *)
+  (* TODO: avoid duplication with Flat and non-flat intersection *)
+  build_structured_type
+    [
+      Intersection
+        [
+          (name_label.stype.union, cons_label.stype.union);
+          (val_label.stype.union, elt_type.union);
+          (next_label.stype.union, list_type.union);
+        ];
+    ]
+    list_type.context
 
-let poly_nil =
-  get_typed_term_unsafe
-    (UnivQuantifier (Abstraction [ (name_label.stype, nil_label.term) ]))
+let build_list_type_pair (kind : recursive_kind) (elt_type : structured_type) =
+  let list_type = build_list_type kind elt_type in
+  let non_empty_list_type = build_non_empty_list_type kind elt_type in
+  { full = list_type; non_empty = non_empty_list_type }
 
-let poly_cons =
+let boolean_list_type = build_list_type_pair Inductive bool_type
+
+let polymoprhic_list_type =
+  build_list_type_pair Inductive (base_to_structured_type (UnivTypeVar 0))
+
+(* The polymoprhic cons function that prepends an element of arbitrary tpye to a list of that type *)
+let cons =
   get_typed_term_unsafe
     (UnivQuantifier
        (Abstraction
@@ -92,7 +123,7 @@ let poly_cons =
             ( base_to_structured_type (UnivTypeVar 0),
               Abstraction
                 [
-                  ( build_ind_list [ UnivTypeVar 0 ],
+                  ( polymoprhic_list_type.full,
                     Abstraction
                       [
                         (name_label.stype, cons_label.term);
