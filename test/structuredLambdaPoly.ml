@@ -133,6 +133,66 @@ let expected_is_empty_supertype =
     ]
     polymoprhic_list_type.full.context
 
+(* Represents `forall X. (NonEmptyList X -> X) & (EmptyList -> None)`, the most specific type *)
+let expected_head_type =
+  build_structured_type
+    [
+      UnivQuantification
+        [
+          Intersection
+            [
+              (polymoprhic_list_type.non_empty.union, [ UnivTypeVar 0 ]);
+              (empty_list.stype.union, none_label.stype.union);
+            ];
+        ];
+    ]
+    polymoprhic_list_type.non_empty.context
+
+(* Represents `forall X. (List X -> X | None)` a more general type *)
+let expected_head_supertype =
+  build_structured_type
+    [
+      UnivQuantification
+        [
+          Intersection
+            [
+              ( polymoprhic_list_type.full.union,
+                UnivTypeVar 0 :: none_label.stype.union );
+            ];
+        ];
+    ]
+    polymoprhic_list_type.full.context
+
+(* Represents `forall X. (NonEmptyList X -> List X) & (EmptyList -> None)`, the most specific type *)
+let expected_tail_type =
+  build_structured_type
+    [
+      UnivQuantification
+        [
+          Intersection
+            [
+              (recontexted_non_empty.union, polymoprhic_list_type.full.union);
+              (empty_list.stype.union, none_label.stype.union);
+            ];
+        ];
+    ]
+    recontexted_non_empty.context
+
+(* Represents `forall X. (List X -> (List X) | None), the more general type *)
+let expected_tail_supertype =
+  build_structured_type
+    [
+      UnivQuantification
+        [
+          Intersection
+            [
+              ( polymoprhic_list_type.full.union,
+                none_label.stype.union @ polymoprhic_list_type.full.union );
+            ];
+        ];
+    ]
+    polymoprhic_list_type.full.context
+
 let simple_boolean_list =
   build_list_term [ true_lambda.term; false_lambda.term ]
 
@@ -243,3 +303,45 @@ let () =
        (Application
           (UnivApplication (is_empty.term, bool_type), simple_boolean_list.term))
        false_lambda.term)
+
+let () =
+  test "Polymoprhic head has expected specific type"
+    (is_equivalent_type head.stype expected_head_type)
+
+let () =
+  test "Polymorphic head has expected more general type"
+    (is_strict_subtype head.stype expected_head_supertype)
+
+let () =
+  test "Polymoprhic tail has expected specific type"
+    (is_equivalent_type tail.stype expected_tail_type)
+
+let () =
+  test "Polymorphic tail has expected more general type"
+    (is_strict_subtype tail.stype expected_tail_supertype)
+
+let () =
+  test "Polymorphic head pulls first element for non-empty list"
+    (evaluates_to
+       (Application
+          (UnivApplication (head.term, bool_type), simple_boolean_list.term))
+       true_lambda.term)
+
+let () =
+  test "Polymorphic head returns None for empty list"
+    (evaluates_to
+       (Application (UnivApplication (head.term, bool_type), empty_list.term))
+       none_label.term)
+
+let () =
+  test "Polymorphic tail gets rest of list for non-empty list"
+    (evaluates_to
+       (Application
+          (UnivApplication (tail.term, bool_type), simple_boolean_list.term))
+       (build_list_term [ false_lambda.term ]).term)
+
+let () =
+  test "Polymoprhic tail returns None for empty list"
+    (evaluates_to
+       (Application (UnivApplication (tail.term, bool_type), empty_list.term))
+       none_label.term)

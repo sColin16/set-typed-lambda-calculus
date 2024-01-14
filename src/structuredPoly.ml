@@ -10,6 +10,7 @@ let val_label = get_typed_term_unsafe (Const "Val")
 let next_label = get_typed_term_unsafe (Const "Next")
 let nil_label = get_typed_term_unsafe (Const "Nil")
 let cons_label = get_typed_term_unsafe (Const "Cons")
+let none_label = get_typed_term_unsafe (Const "None")
 
 let polymoprhic_identity =
   get_typed_term_unsafe
@@ -130,7 +131,7 @@ let boolean_list_type = build_list_type_pair Inductive bool_type
 let polymoprhic_list_type =
   build_list_type_pair Inductive (base_to_structured_type (UnivTypeVar 0))
 
-(* The polymoprhic cons function that prepends an element of arbitrary tpye to a list of that type *)
+(* Polymoprhic function that prepends an element of arbitrary tpye to a list of that type *)
 let cons =
   get_typed_term_unsafe
     (UnivQuantifier
@@ -149,7 +150,7 @@ let cons =
                 ] );
           ]))
 
-(* Polymoprhic is_empty function, which checks if a list is empty or not *)
+(* Polymoprhic function that determines if a list is empty or not *)
 let is_empty =
   get_typed_term_unsafe
     (UnivQuantifier
@@ -157,4 +158,26 @@ let is_empty =
           [
             (polymoprhic_list_type.non_empty, false_lambda.term);
             (empty_list.stype, true_lambda.term);
+          ]))
+
+(* Polymorphic function to get the first element of a list, or None if the list is empty *)
+let head =
+  get_typed_term_unsafe
+    (UnivQuantifier
+       (Abstraction
+          [
+            ( polymoprhic_list_type.non_empty,
+              Application (Variable 0, val_label.term) );
+            (empty_list.stype, none_label.term);
+          ]))
+
+(* Polymoprhic function to get all elements of a list except the first, or None is the list is empty *)
+let tail =
+  get_typed_term_unsafe
+    (UnivQuantifier
+       (Abstraction
+          [
+            ( polymoprhic_list_type.non_empty,
+              Application (Variable 0, next_label.term) );
+            (empty_list.stype, none_label.term)
           ]))
