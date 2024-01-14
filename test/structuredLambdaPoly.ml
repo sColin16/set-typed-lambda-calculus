@@ -320,18 +320,30 @@ let () =
   test "Polymorphic tail has expected more general type"
     (is_strict_subtype tail.stype expected_tail_supertype)
 
+let apply_head_non_empty =
+  get_typed_term_unsafe
+    (Application
+       (UnivApplication (head.term, bool_type), simple_boolean_list.term))
+
+let apply_head_empty =
+  get_typed_term_unsafe
+    (Application (UnivApplication (head.term, bool_type), empty_list.term))
+
 let () =
   test "Polymorphic head pulls first element for non-empty list"
-    (evaluates_to
-       (Application
-          (UnivApplication (head.term, bool_type), simple_boolean_list.term))
-       true_lambda.term)
+    (evaluates_to apply_head_non_empty.term true_lambda.term)
+
+let () =
+  test "Polymoprhic head on non-empty list types correctly"
+    (is_equivalent_type apply_head_non_empty.stype bool_type)
 
 let () =
   test "Polymorphic head returns None for empty list"
-    (evaluates_to
-       (Application (UnivApplication (head.term, bool_type), empty_list.term))
-       none_label.term)
+    (evaluates_to apply_head_empty.term none_label.term)
+
+let () =
+  test "Polymorphic head types correctly applied on empty list"
+    (is_equivalent_type apply_head_empty.stype none_label.stype)
 
 let () =
   test "Polymorphic tail gets rest of list for non-empty list"
