@@ -12,6 +12,7 @@ let get_type_union (types : structured_type list) : structured_type =
       (fun (acc_union_type, acc_recursive_context) next_type ->
         (* Get the next type in the accumulated context to obtain the joined context
            and the next type in the context of that new accumulated context *)
+        (* TODO: investigate replacing this with a call to get_unified_type_context *)
         let new_type = get_type_in_context next_type acc_recursive_context in
         (* Append this union to the accumulated union, use the new context from above *)
         (acc_union_type @ new_type.union, new_type.context))

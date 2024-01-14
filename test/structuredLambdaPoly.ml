@@ -83,6 +83,7 @@ let expected_cons_supertype =
     polymoprhic_list_type.full.context
 
 (* Recontextualize this type so we can use both types in the type below *)
+(* TODO: investigate replacing this with a call to get_unified_type_context_pair *)
 let recontexted_non_empty =
   get_type_in_context polymoprhic_list_type.non_empty
     polymoprhic_list_type.full.context

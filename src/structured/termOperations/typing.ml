@@ -55,6 +55,7 @@ and get_type_rec (term : term) (type_context : type_context_map) (level : int)
               match acc with
               | None -> None
               | Some (acc_union_type, acc_recursive_context) ->
+                  (* TODO: investigate replacing this call with a call to get_unified_type_context *)
                   let new_arg_type =
                     get_type_in_context arg_branch_type acc_recursive_context
                   in
@@ -95,6 +96,7 @@ and get_type_rec (term : term) (type_context : type_context_map) (level : int)
       Option.map
         (fun inner_type ->
           let recontextualized_inner =
+            (* TODO: investigate replacing this with a call to get_unified_type_context_pair *)
             get_type_in_context inner_type recursive_context
           in
           build_structured_type

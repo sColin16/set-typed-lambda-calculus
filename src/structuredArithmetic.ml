@@ -57,8 +57,8 @@ let decrement =
          (seven.stype, six.term);
        ])
 
-let fix_binary_num_op = fix three_bit_type.union unary_num_op.union
-let fix_unary_num_op = fix three_bit_type.union three_bit_type.union
+let fix_binary_num_op = fix three_bit_type unary_num_op
+let fix_unary_num_op = fix three_bit_type three_bit_type
 
 let add =
   get_typed_term_unsafe

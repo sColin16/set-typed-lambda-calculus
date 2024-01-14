@@ -3,6 +3,7 @@ open Structured.TermTypes
 open Structured.TypeOperations.Create
 open TypeOperations.Union
 open StructuredHelpers
+open StructuredBool
 
 let name = get_typed_term_unsafe (Const "Name")
 let val_lambda = get_typed_term_unsafe (Const "Val")
@@ -192,3 +193,151 @@ let neg_infinity =
        [ (Coinductive, get_flat_union_type [ generate_pred_rec_step 1 ]) ])
 
 let infinity = get_type_union [ pos_infinity; neg_infinity ]
+
+let unary_numerical_op =
+  build_structured_type
+    [ Intersection [ (ind_integer.union, ind_integer.union) ] ]
+    ind_integer.context
+
+let binary_numerical_op =
+  build_structured_type
+    [
+      Intersection
+        [
+          ( ind_integer.union,
+            [ Intersection [ (ind_integer.union, ind_integer.union) ] ] );
+        ];
+    ]
+    ind_integer.context
+
+let num_to_bool_op =
+  build_structured_type
+    [ Intersection [ (ind_integer.union, bool_type.union) ] ]
+    ind_integer.context
+
+let binary_num_to_bool_op =
+  build_structured_type
+    [
+      Intersection
+        [
+          ( ind_integer.union,
+            [ Intersection [ (ind_integer.union, bool_type.union) ] ] );
+        ];
+    ]
+    ind_integer.context
+
+(* Increments an inductive number by one *)
+let increment =
+  get_typed_term_unsafe
+    (Abstraction
+       [
+         (ind_negative_number, Application (Variable 0, val_lambda.term));
+         ( get_type_union [ zero.stype; ind_positive_number ],
+           Abstraction
+             [ (name.stype, succ.term); (val_lambda.stype, Variable 1) ] );
+       ])
+
+(* Decrements an inductive number by one *)
+let decrement =
+  get_typed_term_unsafe
+    (Abstraction
+       [
+         ( get_type_union [ zero.stype; ind_negative_number ],
+           Abstraction
+             [ (name.stype, pred.term); (val_lambda.stype, Variable 1) ] );
+         (ind_positive_number, Application (Variable 0, val_lambda.term));
+       ])
+
+(* Determines if a value is even or odd, leveraging the subtyping system *)
+let is_even =
+  get_typed_term_unsafe
+    (Abstraction
+       [
+         (ind_even_integer, true_lambda.term);
+         (ind_odd_integer, false_lambda.term);
+       ])
+
+let fix_binary_num_to_bool = fix ind_integer num_to_bool_op
+let fix_binary_num_op = fix ind_integer unary_numerical_op
+
+let is_equal =
+  get_typed_term_unsafe
+    (fix_binary_num_to_bool
+       (Abstraction
+          [
+            ( binary_num_to_bool_op,
+              Abstraction
+                [
+                  ( zero.stype,
+                    Abstraction
+                      [
+                        ( get_type_union
+                            [ ind_positive_number; ind_negative_number ],
+                          false_lambda.term );
+                        (zero.stype, true_lambda.term);
+                      ] );
+                  ( ind_positive_number,
+                    Abstraction
+                      [
+                        ( get_type_union [ zero.stype; ind_negative_number ],
+                          false_lambda.term );
+                        ( ind_positive_number,
+                          Application
+                            ( Application
+                                ( Variable 2,
+                                  Application (decrement.term, Variable 1) ),
+                              Application (decrement.term, Variable 0) ) );
+                      ] );
+                  ( ind_negative_number,
+                    Abstraction
+                      [
+                        ( get_type_union [ zero.stype; ind_positive_number ],
+                          false_lambda.term );
+                        ( ind_negative_number,
+                          Application
+                            ( Application
+                                ( Variable 2,
+                                  Application (increment.term, Variable 1) ),
+                              Application (increment.term, Variable 0) ) );
+                      ] );
+                ] );
+          ]))
+
+let add =
+  get_typed_term_unsafe
+    (fix_binary_num_op
+       (Abstraction
+          [
+            ( binary_numerical_op,
+              Abstraction
+                [
+                  (zero.stype, Abstraction [ (ind_integer, Variable 0) ]);
+                  ( ind_negative_number,
+                    Abstraction
+                      [
+                        ( ind_integer,
+                          Application
+                            ( Application
+                                ( Variable 2,
+                                  Application (increment.term, Variable 1) ),
+                              Application (decrement.term, Variable 0) ) );
+                      ] );
+                  ( ind_positive_number,
+                    Abstraction
+                      [
+                        ( ind_integer,
+                          Application
+                            ( Application
+                                ( Variable 2,
+                                  Application (decrement.term, Variable 1) ),
+                              Application (increment.term, Variable 0) ) );
+                      ] );
+                ] );
+          ]))
+
+(* Later, consider also implementing these functions *)
+(* subtract *)
+(* fibonnaci *)
+(* negate *)
+(* multiply *)
+(* divide *)

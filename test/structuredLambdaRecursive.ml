@@ -5,7 +5,11 @@ open LambdaCalculus.Structured.TypeOperations.Unary
 open LambdaCalculus.Structured.TypeOperations.Union
 open LambdaCalculus.Structured.TypeOperations.WellFounded
 open LambdaCalculus.StructuredRecursive
+open LambdaCalculus.StructuredBool
 open LambdaCalculus.StructuredHelpers
+open TermOperations.Eval
+open TermOperations.ValToTerm
+open TermTypes
 
 let test (name : string) (result : bool) =
   Printf.printf "%s: %s\n" (if result then "PASS" else "FAIL") name
@@ -13,8 +17,30 @@ let test (name : string) (result : bool) =
 let is_equivalent_type (t1 : structured_type) (t2 : structured_type) =
   is_subtype t1 t2 && is_subtype t2 t1
 
-let is_strict_subtype (t1: structured_type) (t2: structured_type) =
+let is_strict_subtype (t1 : structured_type) (t2 : structured_type) =
   is_subtype t1 t2 && not (is_subtype t2 t1)
+
+let evaluates_to term value = value_to_term (eval term) = value
+
+(* Generate a term to check if two numbers are equal, in the lambda calculus *)
+let numeric_terms_equal_term num1 num2 =
+  Application
+    ( Application (is_equal.term, (generate_typed_num num1).term),
+      (generate_typed_num num2).term )
+
+let numeric_terms_equal num1 num2 =
+  evaluates_to (numeric_terms_equal_term num1 num2) true_lambda.term
+
+let numeric_terms_not_equal num1 num2 =
+  evaluates_to (numeric_terms_equal_term num1 num2) false_lambda.term
+
+let numeric_terms_add_term num1 num2 =
+  Application
+    ( Application (add.term, (generate_typed_num num1).term),
+      (generate_typed_num num2).term )
+
+let assert_adds_to num1 num2 num3 =
+  evaluates_to (numeric_terms_add_term num1 num2) (generate_typed_num num3).term
 
 let () =
   test "Coninductive even or odd integers equal to coinductive integer"
@@ -28,15 +54,18 @@ let () =
 
 let () =
   test "Inductive integer or pos/neg infinity equal to coinductive integer"
-    (is_equivalent_type coi_integer
-       (get_type_union [ ind_integer; infinity ]))
+    (is_equivalent_type coi_integer (get_type_union [ ind_integer; infinity ]))
 
 let () =
-  test "Inductive integers with positive infinity strict subtype of coinductive integers"
+  test
+    "Inductive integers with positive infinity strict subtype of coinductive \
+     integers"
     (is_strict_subtype ind_integer_plus coi_integer)
 
 let () =
-  test "Inductive integers with negative infinity strict subtype of coinductive integers"
+  test
+    "Inductive integers with negative infinity strict subtype of coinductive \
+     integers"
     (is_strict_subtype ind_integer_minus coi_integer)
 
 (* These coinductive types have an inhabited intersection, the infinite function type *)
@@ -153,3 +182,73 @@ let () =
 let () =
   test "Pos/neg infinity is not well-founded"
     (not (is_well_founded_union infinity.union infinity.context))
+
+let () =
+  test "Increment is a unary number operation"
+    (is_subtype increment.stype unary_numerical_op)
+
+let () =
+  test "Decrement is a unary number operation"
+    (is_subtype decrement.stype unary_numerical_op)
+
+(* TODO: consider checking the more specific types of these functions *)
+
+let () =
+  test "Three increments to four"
+    (evaluates_to
+       (Application (increment.term, (generate_typed_num 3).term))
+       (generate_typed_num 4).term)
+
+let () =
+  test "Negative two increment to negative one"
+    (evaluates_to
+       (Application (increment.term, (generate_typed_num (-2)).term))
+       (generate_typed_num (-1)).term)
+
+let () =
+  test "Three decrements to two"
+    (evaluates_to
+       (Application (decrement.term, (generate_typed_num 3).term))
+       (generate_typed_num 2).term)
+
+let () =
+  test "Negative one decrements to negative two"
+    (evaluates_to
+       (Application (decrement.term, (generate_typed_num (-1)).term))
+       (generate_typed_num (-2)).term)
+
+let () =
+  test "is_even is a number to bool operation"
+    (is_subtype is_even.stype num_to_bool_op)
+
+let () =
+  test "four is even"
+    (evaluates_to
+       (Application (is_even.term, (generate_typed_num 4).term))
+       true_lambda.term)
+
+let () =
+  test "five is not even"
+    (evaluates_to
+       (Application (is_even.term, (generate_typed_num 5).term))
+       false_lambda.term)
+
+let () =
+  test "is_equal is of type num -> num -> bool"
+    (is_subtype is_equal.stype binary_num_to_bool_op)
+
+let () = test "2 equals 2" (numeric_terms_equal 2 2)
+let () = test "-4 equals -4" (numeric_terms_equal (-4) (-4))
+let () = test "3 is not equal to 1" (numeric_terms_not_equal 3 1)
+let () = test "-2 is not equal to -3" (numeric_terms_not_equal (-2) (-3))
+let () = test "-1 is not equal to 4" (numeric_terms_not_equal (-1) 4)
+let () = test "2 is not equal to -3" (numeric_terms_not_equal 2 (-3))
+
+let () =
+  test "add is a binary numerical operation"
+    (is_subtype add.stype binary_numerical_op)
+
+let () = test "3 plus 5 is 8" (assert_adds_to 3 5 8)
+let () = test "-2 plus -4 is -6" (assert_adds_to (-2) (-4) (-6))
+let () = test "-4 plus 2 is -2" (assert_adds_to (-4) 2 (-2))
+let () = test "5 plus -2 is 3" (assert_adds_to 5 (-2) 3)

@@ -74,6 +74,7 @@ and substitute_univ_var_type_rec (variable_num : int)
     =
   (* Get the in_type in the context of the with_type so we can safely substitute
   in the with_type while any recursive type variables in the with_type still reference the same types *)
+  (* TODO: replace this call with a call to get_unified_type_context_pair *)
   let recontextualized_type = get_type_in_context in_type with_type.context in
   (* Substitute the universal type variables in the recontextualized type context *)
   let new_context = substitute_univ_var_context variable_num with_type recontextualized_type.context in

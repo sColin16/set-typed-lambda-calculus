@@ -181,3 +181,18 @@ let tail =
               Application (Variable 0, next_label.term) );
             (empty_list.stype, none_label.term)
           ]))
+
+(* List functions we should implement:
+ * Length
+ * nth
+ * reverse
+ * concat
+ * append (add a single element to the end)
+ * flatten
+ * equal
+ * map
+ * filter
+ * fold_left/fold_right
+ * find (return element and/or index)
+ * forall/exists
+*)

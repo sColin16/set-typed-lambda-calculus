@@ -3,6 +3,7 @@ open Structured.TermTypes
 open Structured.TypeOperations.Create
 open Structured.TermOperations.Typing
 open Structured.TypeOperations.Union
+open TypeOperations.Context
 
 type typed_term = { term : term; stype : structured_type }
 
@@ -46,26 +47,42 @@ let get_flat_union_type (union_types : structured_type list) : flat_union_type =
 
 (* Constructs the Z-combinator for a function of a given type, a fixed-point
     combinator for call-by-value semantics *)
-let build_fix (arg_type : union_type) (return_type : union_type) =
-  let func_type = (func_to_structured_type (arg_type, return_type)).union in
-  let fix_context =
-    build_recursive_context
-      [ (Coinductive, [ FIntersection [ ([ RecTypeVar 0 ], func_type) ] ]) ]
+let build_fix (arg_type : structured_type) (return_type : structured_type) =
+  (* First, construct a function type from the arg type to the return type, taking
+     care to properly join the contexts of the two types *)
+  let (new_arg_type, new_return_type), shared_context =
+    get_unified_type_context_pair arg_type return_type
   in
+  let func_type =
+    build_structured_type
+      [ Intersection [ (new_arg_type, new_return_type) ] ]
+      shared_context
+  in
+  (* Next, build the recursive definition that we'll add to the end of the joined context *)
+  let rec_var_num = List.length shared_context in
+  let fix_rec_def =
+    build_recursive_def Coinductive
+      [ FIntersection [ ([ RecTypeVar rec_var_num ], func_type.union) ] ]
+  in
+  (* Then add that definition to the end of the context so it has the number we assigned it *)
+  let new_shared_context = List.append shared_context [ fix_rec_def ] in
   let fix =
     get_typed_term_unsafe
       (Abstraction
          [
-           ( func_to_structured_type (func_type, func_type),
+           ( build_structured_type
+               [ Intersection [ (func_type.union, func_type.union) ] ]
+               new_shared_context,
              Application
                ( Abstraction
                    [
-                     ( build_structured_type [ RecTypeVar 0 ] fix_context,
+                     ( build_structured_type [ RecTypeVar rec_var_num ]
+                         new_shared_context,
                        Application
                          ( Variable 1,
                            Abstraction
                              [
-                               ( union_to_structured_type arg_type,
+                               ( build_structured_type new_arg_type new_shared_context,
                                  Application
                                    ( Application (Variable 1, Variable 1),
                                      Variable 0 ) );
@@ -73,12 +90,13 @@ let build_fix (arg_type : union_type) (return_type : union_type) =
                    ],
                  Abstraction
                    [
-                     ( build_structured_type [ RecTypeVar 0 ] fix_context,
+                     ( build_structured_type [ RecTypeVar rec_var_num ]
+                         new_shared_context,
                        Application
                          ( Variable 1,
                            Abstraction
                              [
-                               ( union_to_structured_type arg_type,
+                               ( build_structured_type new_arg_type new_shared_context,
                                  Application
                                    ( Application (Variable 1, Variable 1),
                                      Variable 0 ) );
@@ -89,6 +107,7 @@ let build_fix (arg_type : union_type) (return_type : union_type) =
   fix
 
 (* Fixes a provided abstraction with the given arg and return type *)
-let fix (arg_type : union_type) (return_type : union_type) (term : term) =
+let fix (arg_type : structured_type) (return_type : structured_type)
+    (term : term) =
   let fix_term = build_fix arg_type return_type in
   Application (fix_term.term, term)
