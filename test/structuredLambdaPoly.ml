@@ -540,3 +540,24 @@ let () =
               (UnivApplication (append.term, ind_integer), integer_list_b.term),
             two.term ))
        (build_list_term [ zero.term; neg_one.term; two.term ]).term)
+
+let () =
+  test "Reverse is a unary list type"
+    (is_subtype reverse.stype
+       (build_structured_type
+          [ UnivQuantification unary_list_op.union ]
+          unary_list_op.context))
+
+let () =
+  test "Reverse of empty list is empty list"
+    (evaluates_to
+       (Application
+          (UnivApplication (reverse.term, ind_integer), empty_list.term))
+       empty_list.term)
+
+let () =
+  test "Reverse of integer list is correct"
+    (evaluates_to
+       (Application
+          (UnivApplication (reverse.term, ind_integer), simple_integer_list.term))
+       (build_list_term [ neg_two.term; two.term; one.term; neg_one.term ]).term)

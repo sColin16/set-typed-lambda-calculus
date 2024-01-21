@@ -225,6 +225,7 @@ let tail =
 
 let fix_list_to_num = fix polymoprhic_list_type.full ind_integer
 let fix_list_idx = fix polymoprhic_list_type.full idx_to_elt_op
+let fix_unary_list = fix polymoprhic_list_type.full polymoprhic_list_type.full
 let fix_binary_list = fix polymoprhic_list_type.full unary_list_op
 
 let length =
@@ -354,13 +355,44 @@ let append =
                 ] );
           ]))
 
+let reverse =
+  get_typed_term_unsafe
+    (UnivQuantifier
+       (fix_unary_list
+          (Abstraction
+             [
+               ( unary_list_op,
+                 Abstraction
+                   [
+                     ( polymoprhic_list_type.non_empty,
+                       Application
+                         ( Application
+                             ( UnivApplication
+                                 ( append.term,
+                                   base_to_structured_type (UnivTypeVar 0) ),
+                               Application
+                                 ( Variable 1,
+                                   Application
+                                     ( UnivApplication
+                                         ( tail.term,
+                                           base_to_structured_type
+                                             (UnivTypeVar 0) ),
+                                       Variable 0 ) ) ),
+                           Application
+                             ( UnivApplication
+                                 ( head.term,
+                                   base_to_structured_type (UnivTypeVar 0) ),
+                               Variable 0 ) ) );
+                     (empty_list.stype, empty_list.term);
+                   ] );
+             ])))
+
 (* List functions we should implement:
- * reverse
- * flatten
  * equal
- * map
  * filter
+ * map
  * fold_left/fold_right
  * find (return element and/or index)
  * forall/exists
+ * flatten
  *)
