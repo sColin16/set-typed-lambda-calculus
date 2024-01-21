@@ -159,6 +159,19 @@ let list_idx_op =
     [ Intersection [ (list_with_idx_union, idx_to_elt_op.union) ] ]
     list_idx_context
 
+let unary_list_op =
+  build_structured_type
+    [
+      Intersection
+        [ (polymoprhic_list_type.full.union, polymoprhic_list_type.full.union) ];
+    ]
+    polymoprhic_list_type.full.context
+
+let binary_list_op =
+  build_structured_type
+    [ Intersection [ (polymoprhic_list_type.full.union, unary_list_op.union) ] ]
+    polymoprhic_list_type.full.context
+
 (* Polymoprhic function that prepends an element of arbitrary tpye to a list of that type *)
 let cons =
   get_typed_term_unsafe
@@ -212,6 +225,7 @@ let tail =
 
 let fix_list_to_num = fix polymoprhic_list_type.full ind_integer
 let fix_list_idx = fix polymoprhic_list_type.full idx_to_elt_op
+let fix_binary_list = fix polymoprhic_list_type.full unary_list_op
 
 let length =
   get_typed_term_unsafe
@@ -239,44 +253,109 @@ let length =
 
 (* TODO: update the fixed type so that we can infer that empty lists always return none *)
 let nth =
-   get_typed_term_unsafe
-     (UnivQuantifier
-        (fix_list_idx
-           (Abstraction
-              [
-                ( list_idx_op,
-                  Abstraction
-                    [
-                      ( polymoprhic_list_type.non_empty,
-                        Abstraction
-                          [
-                            ( zero.stype,
-                              Application
-                                ( UnivApplication
-                                    ( head.term,
-                                      base_to_structured_type (UnivTypeVar 0) ),
-                                  Variable 1 ) );
-                            ( ind_positive_number,
-                              Application
-                                ( Application
-                                    ( Variable 2,
-                                      Application
-                                        ( UnivApplication
-                                            ( tail.term,
-                                              base_to_structured_type
-                                                (UnivTypeVar 0) ),
-                                          Variable 1 ) ),
-                                  Application (decrement.term, Variable 0) ) );
-                          ] );
-                      ( empty_list.stype,
-                        Abstraction [ (ind_natural_number, none_label.term) ] );
-                    ] );
-              ])))
+  get_typed_term_unsafe
+    (UnivQuantifier
+       (fix_list_idx
+          (Abstraction
+             [
+               ( list_idx_op,
+                 Abstraction
+                   [
+                     ( polymoprhic_list_type.non_empty,
+                       Abstraction
+                         [
+                           ( zero.stype,
+                             Application
+                               ( UnivApplication
+                                   ( head.term,
+                                     base_to_structured_type (UnivTypeVar 0) ),
+                                 Variable 1 ) );
+                           ( ind_positive_number,
+                             Application
+                               ( Application
+                                   ( Variable 2,
+                                     Application
+                                       ( UnivApplication
+                                           ( tail.term,
+                                             base_to_structured_type
+                                               (UnivTypeVar 0) ),
+                                         Variable 1 ) ),
+                                 Application (decrement.term, Variable 0) ) );
+                         ] );
+                     ( empty_list.stype,
+                       Abstraction [ (ind_natural_number, none_label.term) ] );
+                   ] );
+             ])))
+
+let concat =
+  get_typed_term_unsafe
+    (UnivQuantifier
+       (fix_binary_list
+          (Abstraction
+             [
+               ( binary_list_op,
+                 Abstraction
+                   [
+                     ( polymoprhic_list_type.non_empty,
+                       Abstraction
+                         [
+                           ( polymoprhic_list_type.full,
+                             Application
+                               ( Application
+                                   ( UnivApplication
+                                       ( cons.term,
+                                         base_to_structured_type (UnivTypeVar 0)
+                                       ),
+                                     Application
+                                       ( UnivApplication
+                                           ( head.term,
+                                             base_to_structured_type
+                                               (UnivTypeVar 0) ),
+                                         Variable 1 ) ),
+                                 Application
+                                   ( Application
+                                       ( Variable 2,
+                                         Application
+                                           ( UnivApplication
+                                               ( tail.term,
+                                                 base_to_structured_type
+                                                   (UnivTypeVar 0) ),
+                                             Variable 1 ) ),
+                                     Variable 0 ) ) );
+                         ] );
+                     ( empty_list.stype,
+                       Abstraction [ (polymoprhic_list_type.full, Variable 0) ]
+                     );
+                   ] );
+             ])))
+
+let append =
+  get_typed_term_unsafe
+    (UnivQuantifier
+       (Abstraction
+          [
+            ( polymoprhic_list_type.full,
+              Abstraction
+                [
+                  ( base_to_structured_type (UnivTypeVar 0),
+                    Application
+                      ( Application
+                          ( UnivApplication
+                              ( concat.term,
+                                base_to_structured_type (UnivTypeVar 0) ),
+                            Variable 1 ),
+                        Application
+                          ( Application
+                              ( UnivApplication
+                                  ( cons.term,
+                                    base_to_structured_type (UnivTypeVar 0) ),
+                                Variable 0 ),
+                            empty_list.term ) ) );
+                ] );
+          ]))
 
 (* List functions we should implement:
  * reverse
- * concat
- * append (add a single element to the end)
  * flatten
  * equal
  * map

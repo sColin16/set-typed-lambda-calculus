@@ -196,11 +196,35 @@ let expected_tail_supertype =
     ]
     polymoprhic_list_type.full.context
 
+(* TODO: assert that this functions returns a non-empty list with types *)
+let expected_append_type =
+  build_structured_type
+    [
+      UnivQuantification
+        [
+          Intersection
+            [
+              ( polymoprhic_list_type.full.union,
+                [
+                  Intersection
+                    [ ([ UnivTypeVar 0 ], polymoprhic_list_type.full.union) ];
+                ] );
+            ];
+        ];
+    ]
+    polymoprhic_list_type.full.context
+
 let simple_boolean_list =
   build_list_term [ true_lambda.term; false_lambda.term ]
 
 let simple_integer_list =
   build_list_term [ neg_one.term; one.term; two.term; neg_two.term ]
+
+let integer_list_b = build_list_term [ zero.term; neg_one.term ]
+
+let integer_list_combined =
+  build_list_term
+    [ neg_one.term; one.term; two.term; neg_two.term; zero.term; neg_one.term ]
 
 let () =
   test "Polymoprhic identity function type"
@@ -450,3 +474,69 @@ let () =
               (UnivApplication (nth.term, ind_integer), simple_integer_list.term),
             (generate_typed_num 7).term ))
        none_label.term)
+
+let () =
+  test "Concat is a binary list operation"
+    (is_subtype concat.stype
+       (build_structured_type
+          [ UnivQuantification binary_list_op.union ]
+          binary_list_op.context))
+
+let () =
+  test "Concat two empty lists is empty list"
+    (evaluates_to
+       (Application
+          ( Application
+              (UnivApplication (concat.term, ind_integer), empty_list.term),
+            empty_list.term ))
+       empty_list.term)
+
+let () =
+  test "Concat empty list with integer list is integer list"
+    (evaluates_to
+       (Application
+          ( Application
+              ( UnivApplication (concat.term, ind_integer),
+                simple_integer_list.term ),
+            empty_list.term ))
+       simple_integer_list.term)
+
+let () =
+  test "Concat integer list with empty list is integer list"
+    (evaluates_to
+       (Application
+          ( Application
+              (UnivApplication (concat.term, ind_integer), empty_list.term),
+            simple_integer_list.term ))
+       simple_integer_list.term)
+
+let () =
+  test "Concat two non-empty integer lists is correct"
+    (evaluates_to
+       (Application
+          ( Application
+              ( UnivApplication (concat.term, ind_integer),
+                simple_integer_list.term ),
+            integer_list_b.term ))
+       integer_list_combined.term)
+
+let () =
+  test "Append has expected type" (is_subtype append.stype expected_append_type)
+
+let () =
+  test "Append to empty list is list with just that element"
+    (evaluates_to
+       (Application
+          ( Application
+              (UnivApplication (append.term, ind_integer), empty_list.term),
+            neg_one.term ))
+       (build_list_term [ neg_one.term ]).term)
+
+let () =
+  test "Append to non-empty list is correct"
+    (evaluates_to
+       (Application
+          ( Application
+              (UnivApplication (append.term, ind_integer), integer_list_b.term),
+            two.term ))
+       (build_list_term [ zero.term; neg_one.term; two.term ]).term)
