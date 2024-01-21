@@ -31,13 +31,21 @@ and eval_rec (term : term) (env : environment) : value =
       | VUnivQuantifier _ ->
           raise (Invalid_argument "Cannot apply a universal quantifier"))
   (* Perform implicit substitution with universal quantifier application for simplicity *)
-  | UnivApplication (app_term, app_type) ->
-    match eval_rec app_term env with
-    | VUnivQuantifier inner_term ->
-      let substituted_inner_term = substitute_univ_var_term app_type inner_term in
-      eval_rec substituted_inner_term env
-    | VConst _ -> raise (Invalid_argument "Cannot perform universal application on a constant")
-    | Closure _ -> raise (Invalid_argument "Cannot perform universal application on a abstraction")
+  | UnivApplication (app_term, app_type) -> (
+      match eval_rec app_term env with
+      | VUnivQuantifier inner_term ->
+          let substituted_inner_term =
+            substitute_univ_var_term app_type inner_term
+          in
+          eval_rec substituted_inner_term env
+      | VConst _ ->
+          raise
+            (Invalid_argument
+               "Cannot perform universal application on a constant")
+      | Closure _ ->
+          raise
+            (Invalid_argument
+               "Cannot perform universal application on a abstraction"))
 
 (* Determines the branch of the abstraction to execute, based on the type of the argument *)
 and resolve_branch branches argument =
