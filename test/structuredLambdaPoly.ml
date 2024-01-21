@@ -237,29 +237,21 @@ let () =
   test "Double polymorphic eval with increment"
     (evaluates_to
        (Application
-          ( Application
-              ( applied_poly_double.term,
-                increment.term ),
-            two.term ))
+          (Application (applied_poly_double.term, increment.term), two.term))
        (generate_typed_num 4).term)
 
 let () =
   test "Double polymorphic eval with decrement"
     (evaluates_to
        (Application
-          ( Application
-              ( applied_poly_double.term,
-                decrement.term ),
-            zero.term ))
+          (Application (applied_poly_double.term, decrement.term), zero.term))
        (generate_typed_num (-2)).term)
 
 let () =
   test "Quadruple polymorphic with increment"
     (evaluates_to
        (Application
-          ( Application
-              ( applied_poly_quadruple.term,
-                increment.term ),
+          ( Application (applied_poly_quadruple.term, increment.term),
             (generate_typed_num 6).term ))
        (generate_typed_num 10).term)
 
@@ -267,9 +259,7 @@ let () =
   test "Quadruple polymorphic with decrement"
     (evaluates_to
        (Application
-          ( Application
-              ( applied_poly_quadruple.term,
-                decrement.term ),
+          ( Application (applied_poly_quadruple.term, decrement.term),
             (generate_typed_num 5).term ))
        one.term)
 
@@ -408,3 +398,55 @@ let () =
        (Application
           (UnivApplication (length.term, ind_integer), simple_integer_list.term))
        (generate_typed_num 4).term)
+
+let () =
+  test "nth is a list index operation"
+    (is_subtype nth.stype
+       (build_structured_type
+          [ UnivQuantification list_idx_op.union ]
+          list_idx_op.context))
+
+let () =
+  test "first in empty list is none"
+    (evaluates_to
+       (Application
+          ( Application
+              (UnivApplication (nth.term, ind_positive_number), empty_list.term),
+            zero.term ))
+       none_label.term)
+
+let () =
+  test "third in empty list is none"
+    (evaluates_to
+       (Application
+          ( Application
+              (UnivApplication (nth.term, ind_positive_number), empty_list.term),
+            (generate_typed_num 3).term ))
+       none_label.term)
+
+let () =
+  test "second is simple boolean list is correct"
+    (evaluates_to
+       (Application
+          ( Application
+              (UnivApplication (nth.term, bool_type), simple_boolean_list.term),
+            one.term ))
+       false_lambda.term)
+
+let () =
+  test "third in simple integer list is correct"
+    (evaluates_to
+       (Application
+          ( Application
+              (UnivApplication (nth.term, ind_integer), simple_integer_list.term),
+            two.term ))
+       two.term)
+
+let () =
+  test "out of bound in integer list is none"
+    (evaluates_to
+       (Application
+          ( Application
+              (UnivApplication (nth.term, ind_integer), simple_integer_list.term),
+            (generate_typed_num 7).term ))
+       none_label.term)

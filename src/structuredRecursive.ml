@@ -98,7 +98,7 @@ let coi_integer =
   get_type_union [ coi_negative_number; zero.stype; coi_positive_number ]
 
 let ind_natural_number = get_type_union [ zero.stype; ind_positive_number ]
-let ind_non_negative_number = get_type_union [ zero.stype; ind_negative_number ]
+let ind_non_positive_number = get_type_union [ zero.stype; ind_negative_number ]
 
 let ind_integer =
   get_type_union [ ind_negative_number; zero.stype; ind_positive_number ]

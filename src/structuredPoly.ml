@@ -133,13 +133,31 @@ let boolean_list_type = build_list_type_pair Inductive bool_type
 let polymoprhic_list_type =
   build_list_type_pair Inductive (base_to_structured_type (UnivTypeVar 0))
 
-let (new_list_union, new_num_union), list_num_context =
+let (list_with_num_union, num_with_list_union), list_num_context =
   get_unified_type_context_pair polymoprhic_list_type.full ind_integer
 
 let list_to_num_op =
   build_structured_type
-    [ Intersection [ (new_list_union, new_num_union) ] ]
+    [ Intersection [ (list_with_num_union, num_with_list_union) ] ]
     list_num_context
+
+let (list_with_idx_union, idx_with_list_union), list_idx_context =
+  get_unified_type_context_pair polymoprhic_list_type.full ind_natural_number
+
+(* Represents `Nat -> X | None`, the "return value" of the list_idx_op function *)
+let idx_to_elt_op =
+  build_structured_type
+    [
+      Intersection
+        [ (idx_with_list_union, UnivTypeVar 0 :: none_label.stype.union) ];
+    ]
+    list_idx_context
+
+(* Represents `List X -> Nat -> X | None`, when embedded in some universal quantifier with binding variable X *)
+let list_idx_op =
+  build_structured_type
+    [ Intersection [ (list_with_idx_union, idx_to_elt_op.union) ] ]
+    list_idx_context
 
 (* Polymoprhic function that prepends an element of arbitrary tpye to a list of that type *)
 let cons =
@@ -193,32 +211,69 @@ let tail =
           ]))
 
 let fix_list_to_num = fix polymoprhic_list_type.full ind_integer
+let fix_list_idx = fix polymoprhic_list_type.full idx_to_elt_op
 
 let length =
   get_typed_term_unsafe
     (UnivQuantifier
        (fix_list_to_num
-       (Abstraction
-          [
-            ( list_to_num_op,
-              Abstraction
-                [
-                  ( polymoprhic_list_type.non_empty,
-                    Application
-                      ( increment.term,
-                        Application
-                          ( Variable 1,
-                            Application
-                              ( UnivApplication
-                                  ( tail.term,
-                                    base_to_structured_type (UnivTypeVar 0) ),
-                                Variable 0 ) ) ) );
-                  (empty_list.stype, zero.term);
-                ] );
-          ])))
+          (Abstraction
+             [
+               ( list_to_num_op,
+                 Abstraction
+                   [
+                     ( polymoprhic_list_type.non_empty,
+                       Application
+                         ( increment.term,
+                           Application
+                             ( Variable 1,
+                               Application
+                                 ( UnivApplication
+                                     ( tail.term,
+                                       base_to_structured_type (UnivTypeVar 0)
+                                     ),
+                                   Variable 0 ) ) ) );
+                     (empty_list.stype, zero.term);
+                   ] );
+             ])))
+
+(* TODO: update the fixed type so that we can infer that empty lists always return none *)
+let nth =
+   get_typed_term_unsafe
+     (UnivQuantifier
+        (fix_list_idx
+           (Abstraction
+              [
+                ( list_idx_op,
+                  Abstraction
+                    [
+                      ( polymoprhic_list_type.non_empty,
+                        Abstraction
+                          [
+                            ( zero.stype,
+                              Application
+                                ( UnivApplication
+                                    ( head.term,
+                                      base_to_structured_type (UnivTypeVar 0) ),
+                                  Variable 1 ) );
+                            ( ind_positive_number,
+                              Application
+                                ( Application
+                                    ( Variable 2,
+                                      Application
+                                        ( UnivApplication
+                                            ( tail.term,
+                                              base_to_structured_type
+                                                (UnivTypeVar 0) ),
+                                          Variable 1 ) ),
+                                  Application (decrement.term, Variable 0) ) );
+                          ] );
+                      ( empty_list.stype,
+                        Abstraction [ (ind_natural_number, none_label.term) ] );
+                    ] );
+              ])))
 
 (* List functions we should implement:
- * nth
  * reverse
  * concat
  * append (add a single element to the end)
