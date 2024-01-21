@@ -2,8 +2,10 @@ open Structured.Metatypes
 open Structured.TermTypes
 open Structured.TypeOperations.Create
 open TypeOperations.Helpers
+open TypeOperations.Context
 open StructuredHelpers
 open StructuredBool
+open StructuredRecursive
 
 let name_label = get_typed_term_unsafe (Const "Name")
 let val_label = get_typed_term_unsafe (Const "Val")
@@ -131,6 +133,14 @@ let boolean_list_type = build_list_type_pair Inductive bool_type
 let polymoprhic_list_type =
   build_list_type_pair Inductive (base_to_structured_type (UnivTypeVar 0))
 
+let (new_list_union, new_num_union), list_num_context =
+  get_unified_type_context_pair polymoprhic_list_type.full ind_integer
+
+let list_to_num_op =
+  build_structured_type
+    [ Intersection [ (new_list_union, new_num_union) ] ]
+    list_num_context
+
 (* Polymoprhic function that prepends an element of arbitrary tpye to a list of that type *)
 let cons =
   get_typed_term_unsafe
@@ -179,11 +189,35 @@ let tail =
           [
             ( polymoprhic_list_type.non_empty,
               Application (Variable 0, next_label.term) );
-            (empty_list.stype, none_label.term)
+            (empty_list.stype, none_label.term);
           ]))
 
+let fix_list_to_num = fix polymoprhic_list_type.full ind_integer
+
+let length =
+  get_typed_term_unsafe
+    (UnivQuantifier
+       (fix_list_to_num
+       (Abstraction
+          [
+            ( list_to_num_op,
+              Abstraction
+                [
+                  ( polymoprhic_list_type.non_empty,
+                    Application
+                      ( increment.term,
+                        Application
+                          ( Variable 1,
+                            Application
+                              ( UnivApplication
+                                  ( tail.term,
+                                    base_to_structured_type (UnivTypeVar 0) ),
+                                Variable 0 ) ) ) );
+                  (empty_list.stype, zero.term);
+                ] );
+          ])))
+
 (* List functions we should implement:
- * Length
  * nth
  * reverse
  * concat
@@ -195,4 +229,4 @@ let tail =
  * fold_left/fold_right
  * find (return element and/or index)
  * forall/exists
-*)
+ *)

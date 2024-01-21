@@ -5,7 +5,7 @@ open LambdaCalculus.Structured.TermOperations.ValToTerm
 open LambdaCalculus.Structured.TypeOperations.Subtype
 open LambdaCalculus.Structured.Metatypes
 open LambdaCalculus.StructuredHelpers
-open LambdaCalculus.StructuredArithmetic
+open LambdaCalculus.StructuredRecursive
 open TypeOperations.Create
 open TypeOperations.Context
 open TypeOperations.Intersection
@@ -26,12 +26,11 @@ let applied_poly_identity =
     (UnivApplication (polymoprhic_identity.term, name_label.stype))
 
 let applied_poly_double =
-  get_typed_term_unsafe
-    (UnivApplication (polymorphic_double.term, three_bit_type))
+  get_typed_term_unsafe (UnivApplication (polymorphic_double.term, ind_integer))
 
 let applied_poly_quadruple =
   get_typed_term_unsafe
-    (UnivApplication (polymorphic_quadruple.term, three_bit_type))
+    (UnivApplication (polymorphic_quadruple.term, ind_integer))
 
 let expected_poly_identity_type =
   base_to_structured_type
@@ -54,12 +53,15 @@ let expected_poly_map_type =
        ])
 
 let expected_poly_map_applied_type =
-  base_to_structured_type
-    (Intersection
-       [
-         ( [ Intersection [ (three_bit_type.union, three_bit_type.union) ] ],
-           [ Intersection [ (three_bit_type.union, three_bit_type.union) ] ] );
-       ])
+  build_structured_type
+    [
+      Intersection
+        [
+          ( [ Intersection [ (ind_integer.union, ind_integer.union) ] ],
+            [ Intersection [ (ind_integer.union, ind_integer.union) ] ] );
+        ];
+    ]
+    ind_integer.context
 
 (* Represents `forall X. X -> List X -> List X`, when final return can be asserted to be non-empty *)
 let expected_cons_supertype =
@@ -197,6 +199,9 @@ let expected_tail_supertype =
 let simple_boolean_list =
   build_list_term [ true_lambda.term; false_lambda.term ]
 
+let simple_integer_list =
+  build_list_term [ neg_one.term; one.term; two.term; neg_two.term ]
+
 let () =
   test "Polymoprhic identity function type"
     (is_equivalent_type polymoprhic_identity.stype expected_poly_identity_type)
@@ -232,28 +237,40 @@ let () =
   test "Double polymorphic eval with increment"
     (evaluates_to
        (Application
-          (Application (applied_poly_double.term, increment.term), two.term))
-       four.term)
+          ( Application
+              ( applied_poly_double.term,
+                increment.term ),
+            two.term ))
+       (generate_typed_num 4).term)
 
 let () =
   test "Double polymorphic eval with decrement"
     (evaluates_to
        (Application
-          (Application (applied_poly_double.term, decrement.term), zero.term))
-       six.term)
+          ( Application
+              ( applied_poly_double.term,
+                decrement.term ),
+            zero.term ))
+       (generate_typed_num (-2)).term)
 
 let () =
   test "Quadruple polymorphic with increment"
     (evaluates_to
        (Application
-          (Application (applied_poly_quadruple.term, increment.term), six.term))
-       two.term)
+          ( Application
+              ( applied_poly_quadruple.term,
+                increment.term ),
+            (generate_typed_num 6).term ))
+       (generate_typed_num 10).term)
 
 let () =
   test "Quadruple polymorphic with decrement"
     (evaluates_to
        (Application
-          (Application (applied_poly_quadruple.term, decrement.term), five.term))
+          ( Application
+              ( applied_poly_quadruple.term,
+                decrement.term ),
+            (generate_typed_num 5).term ))
        one.term)
 
 let () =
@@ -358,3 +375,36 @@ let () =
     (evaluates_to
        (Application (UnivApplication (tail.term, bool_type), empty_list.term))
        none_label.term)
+
+let () =
+  test "Length is a list to num operation"
+    (is_subtype length.stype
+       (build_structured_type
+          [ UnivQuantification list_to_num_op.union ]
+          list_to_num_op.context))
+
+let () =
+  test "Empty integer list has length 0"
+    (evaluates_to
+       (Application (UnivApplication (length.term, ind_integer), empty_list.term))
+       zero.term)
+
+let () =
+  test "Empty boolean list has length 0"
+    (evaluates_to
+       (Application (UnivApplication (length.term, bool_type), empty_list.term))
+       zero.term)
+
+let () =
+  test "Simple boolean list has correct length"
+    (evaluates_to
+       (Application
+          (UnivApplication (length.term, bool_type), simple_boolean_list.term))
+       two.term)
+
+let () =
+  test "Simple integer list has correct length"
+    (evaluates_to
+       (Application
+          (UnivApplication (length.term, ind_integer), simple_integer_list.term))
+       (generate_typed_num 4).term)

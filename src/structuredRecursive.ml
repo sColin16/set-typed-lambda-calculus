@@ -7,10 +7,10 @@ open StructuredBool
 
 let name = get_typed_term_unsafe (Const "Name")
 let val_lambda = get_typed_term_unsafe (Const "Val")
-let zero = get_typed_term_unsafe (Const "Zero")
+let zero_label = get_typed_term_unsafe (Const "Zero")
 let succ = get_typed_term_unsafe (Const "Succ")
 let pred = get_typed_term_unsafe (Const "Pred")
-let zero = get_typed_term_unsafe (Abstraction [ (name.stype, zero.term) ])
+let zero = get_typed_term_unsafe (Abstraction [ (name.stype, zero_label.term) ])
 
 let rec generate_typed_num (num : int) =
   let term = if num >= 0 then generate_pos_num num else generate_neg_num num in
