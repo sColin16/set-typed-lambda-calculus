@@ -13,6 +13,9 @@ open TermOperations.Helpers
 
 let univ_quantify_union (union : union_type) = [ UnivQuantification union ]
 
+let univ_quantify_union_double (union : union_type) =
+  [ UnivQuantification [ UnivQuantification union ] ]
+
 let identity_int =
   typed_term (UnivApplication (polymoprhic_identity.term, ind_integer))
 
@@ -189,6 +192,10 @@ let append_int = typed_term (UnivApplication (append.term, ind_integer))
 let reverse_int = typed_term (UnivApplication (reverse.term, ind_integer))
 let filter_bool = typed_term (UnivApplication (filter.term, bool_type))
 let filter_int = typed_term (UnivApplication (filter.term, ind_integer))
+
+let map_int_bool =
+  typed_term
+    (UnivApplication (UnivApplication (map.term, ind_integer), bool_type))
 
 let true_predicate =
   typed_term
@@ -516,3 +523,31 @@ let () =
        (binary_apply filter_int.term simple_integer_list.term
           false_predicate_int.term)
        empty_list.term)
+
+let () =
+  test "Map has the appropriate type"
+    (is_subtype map.stype (map_type univ_quantify_union_double map_op))
+
+let () =
+  test "Map empty list is an empty list"
+    (evaluates_to
+       (binary_apply map_int_bool.term is_even.term empty_list.term)
+       empty_list.term)
+
+let () =
+  test "Map for is_even over integer list is correct"
+    (evaluates_to
+       (binary_apply map_int_bool.term is_even.term simple_integer_list.term)
+       (build_bool_list_term [ false; false; true; true ]).term)
+
+let () =
+  test "Map for is_odd over integer list is correct"
+    (evaluates_to
+       (binary_apply map_int_bool.term is_odd.term simple_integer_list.term)
+       (build_bool_list_term [ true; true; false; false ]).term)
+
+let () = test "Map always returning false is correct"
+    (evaluates_to
+      (binary_apply map_int_bool.term false_predicate_int.term simple_integer_list.term)
+      (build_bool_list_term [ false; false; false; false]).term
+    )

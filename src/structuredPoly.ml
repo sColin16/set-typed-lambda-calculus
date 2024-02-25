@@ -7,6 +7,7 @@ open StructuredHelpers
 open StructuredBool
 open StructuredRecursive
 open TermOperations.Helpers
+open TypeOperations.Map
 
 let name_label = typed_term (Const "Name")
 let val_label = typed_term (Const "Val")
@@ -42,12 +43,10 @@ let polymorphic_quadruple =
        (Application
           ( UnivApplication
               ( polymorphic_double.term,
-                func_type ([ UnivTypeVar 0 ], [ UnivTypeVar 0 ])
-              ),
+                func_type ([ UnivTypeVar 0 ], [ UnivTypeVar 0 ]) ),
             polymorphic_double_poly )))
 
-let empty_list =
-  typed_term (Abstraction [ (name_label.stype, nil_label.term) ])
+let empty_list = typed_term (Abstraction [ (name_label.stype, nil_label.term) ])
 
 type list_type_pair = { full : structured_type; non_empty : structured_type }
 
@@ -130,6 +129,9 @@ let boolean_list_type = build_list_type_pair Inductive bool_type
 let polymoprhic_list_type =
   build_list_type_pair Inductive (base_type (UnivTypeVar 0))
 
+let polymorphic_list_type_nested1 =
+  build_list_type_pair Inductive (base_type (UnivTypeVar 1))
+
 let (list_with_num_union, num_with_list_union), list_num_context =
   get_unified_type_context_pair polymoprhic_list_type.full ind_integer
 
@@ -170,8 +172,7 @@ let binary_list_op =
     polymoprhic_list_type.full.context
 
 (* Represents `X -> Bool`, the condition function for filtering polymoprhic lists *)
-let poly_to_bool_op =
-  func_type ([ UnivTypeVar 0 ], bool_type.union)
+let poly_to_bool_op = func_type ([ UnivTypeVar 0 ], bool_type.union)
 
 (* Represents `(X -> Bool) -> List X` *)
 let cond_to_list_op =
@@ -188,6 +189,25 @@ let filter_op =
       Intersection [ (polymoprhic_list_type.full.union, cond_to_list_op.union) ];
     ]
     polymoprhic_list_type.full.context
+
+(* Represents `List X -> List Y`, part of the polymorphic map type *)
+let list_transform_op =
+  map_type2
+    (fun outer_list inner_list -> [ Intersection [ (outer_list, inner_list) ] ])
+    polymorphic_list_type_nested1.full polymoprhic_list_type.full
+
+(* Represents `(X -> Y) -> List X -> List Y, the signature for the polymoprhic map function *)
+let map_op =
+  map_type
+    (fun list_transform_union ->
+      [
+        Intersection
+          [
+            ( [ Intersection [ ([ UnivTypeVar 1 ], [ UnivTypeVar 0 ]) ] ],
+              list_transform_union );
+          ];
+      ])
+    list_transform_op
 
 (* Polymoprhic function that prepends an element of arbitrary tpye to a list of that type *)
 let cons =
@@ -208,8 +228,7 @@ let cons =
                 ] );
           ]))
 
-let cons_poly =
-  UnivApplication (cons.term, base_type (UnivTypeVar 0))
+let cons_poly = UnivApplication (cons.term, base_type (UnivTypeVar 0))
 
 (* Polymoprhic function that determines if a list is empty or not *)
 let is_empty =
@@ -232,8 +251,8 @@ let head =
             (empty_list.stype, none_label.term);
           ]))
 
-let head_poly =
-  UnivApplication (head.term, base_type (UnivTypeVar 0))
+let head_poly = UnivApplication (head.term, base_type (UnivTypeVar 0))
+let head_poly_nested1 = UnivApplication (head.term, base_type (UnivTypeVar 1))
 
 (* Polymoprhic function to get all elements of a list except the first, or None is the list is empty *)
 let tail =
@@ -246,14 +265,15 @@ let tail =
             (empty_list.stype, none_label.term);
           ]))
 
-let tail_poly =
-  UnivApplication (tail.term, base_type (UnivTypeVar 0))
+let tail_poly = UnivApplication (tail.term, base_type (UnivTypeVar 0))
+let tail_poly_nested1 = UnivApplication (tail.term, base_type (UnivTypeVar 1))
 
 let fix_list_to_num = fix polymoprhic_list_type.full ind_integer
 let fix_list_idx = fix polymoprhic_list_type.full idx_to_elt_op
 let fix_unary_list = fix polymoprhic_list_type.full polymoprhic_list_type.full
 let fix_binary_list = fix polymoprhic_list_type.full unary_list_op
 let fix_filter = fix polymoprhic_list_type.full cond_to_list_op
+let fix_map = fix (func_type ([UnivTypeVar 1], [UnivTypeVar 0])) list_transform_op
 
 let length =
   typed_term
@@ -323,8 +343,7 @@ let concat =
                    ] );
              ])))
 
-let concat_poly =
-  UnivApplication (concat.term, base_type (UnivTypeVar 0))
+let concat_poly = UnivApplication (concat.term, base_type (UnivTypeVar 0))
 
 let append =
   typed_term
@@ -340,8 +359,7 @@ let append =
                 ] );
           ]))
 
-let append_poly =
-  UnivApplication (append.term, base_type (UnivTypeVar 0))
+let append_poly = UnivApplication (append.term, base_type (UnivTypeVar 0))
 
 let reverse =
   typed_term
@@ -397,9 +415,34 @@ let filter =
                    ] );
              ])))
 
+let map =
+  typed_term
+    (UnivQuantifier
+       (UnivQuantifier
+          (fix_map
+             (Abstraction
+                [
+                  ( map_op,
+                    Abstraction
+                      [
+                        ( func_type ([ UnivTypeVar 1 ], [ UnivTypeVar 0 ]),
+                          Abstraction
+                            [
+                              ( polymorphic_list_type_nested1.non_empty,
+                                binary_apply cons_poly
+                                  (Application
+                                     ( Variable 1,
+                                       Application
+                                         (head_poly_nested1, Variable 0) ))
+                                  (binary_apply (Variable 2) (Variable 1)
+                                     (Application (tail_poly_nested1, Variable 0)))
+                              );
+                              (empty_list.stype, empty_list.term);
+                            ] );
+                      ] );
+                ]))))
+
 (* List functions we should implement:
- * filter
- * map
  * fold_left/fold_right
  * forall/exists
  * equal
