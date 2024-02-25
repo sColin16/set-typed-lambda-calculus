@@ -1,12 +1,7 @@
-open LambdaCalculus.Structured.TermOperations.Eval
-open LambdaCalculus.Structured.TermOperations.ValToTerm
 open LambdaCalculus.Structured.TypeOperations.Subtype
 open LambdaCalculus.StructuredArithmetic
-
-let test (name : string) (result : bool) =
-  Printf.printf "%s: %s\n" (if result then "PASS" else "FAIL") name
-
-let evaluates_to term value = value_to_term (eval term) = value
+open LambdaCalculus.TestHelpers
+open TermOperations.Helpers
 
 let () =
   test "increment is a unary num operator"
@@ -39,21 +34,15 @@ let () =
 
 let () =
   test "one plus one"
-    (evaluates_to
-       (Application (Application (add.term, one.term), one.term))
-       two.term)
+    (evaluates_to (binary_apply add.term one.term one.term) two.term)
 
 let () =
   test "two plus two"
-    (evaluates_to
-       (Application (Application (add.term, two.term), two.term))
-       four.term)
+    (evaluates_to (binary_apply add.term two.term two.term) four.term)
 
 let () =
   test "three plus seven"
-    (evaluates_to
-       (Application (Application (add.term, three.term), seven.term))
-       two.term)
+    (evaluates_to (binary_apply add.term three.term seven.term) two.term)
 
 let () =
   test "fib 0" (evaluates_to (Application (fib.term, zero.term)) one.term)

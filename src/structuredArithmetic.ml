@@ -1,17 +1,19 @@
 open StructuredHelpers
 open TypeOperations.Union
+open TypeOperations.Create
+open TermOperations.Helpers
 
-let zero = get_typed_term_unsafe (Const "Zero")
-let one = get_typed_term_unsafe (Const "One")
-let two = get_typed_term_unsafe (Const "Two")
-let three = get_typed_term_unsafe (Const "Three")
-let four = get_typed_term_unsafe (Const "Four")
-let five = get_typed_term_unsafe (Const "Five")
-let six = get_typed_term_unsafe (Const "Six")
-let seven = get_typed_term_unsafe (Const "Seven")
+let zero = typed_term (Const "Zero")
+let one = typed_term (Const "One")
+let two = typed_term (Const "Two")
+let three = typed_term (Const "Three")
+let four = typed_term (Const "Four")
+let five = typed_term (Const "Five")
+let six = typed_term (Const "Six")
+let seven = typed_term (Const "Seven")
 
 let three_bit_type =
-  get_type_union
+  type_union
     [
       zero.stype;
       one.stype;
@@ -23,14 +25,11 @@ let three_bit_type =
       seven.stype;
     ]
 
-let unary_num_op =
-  func_to_structured_type (three_bit_type.union, three_bit_type.union)
-
-let binary_num_op =
-  func_to_structured_type (three_bit_type.union, unary_num_op.union)
+let unary_num_op = func_type (three_bit_type.union, three_bit_type.union)
+let binary_num_op = func_type (three_bit_type.union, unary_num_op.union)
 
 let increment =
-  get_typed_term_unsafe
+  typed_term
     (Abstraction
        [
          (zero.stype, one.term);
@@ -44,7 +43,7 @@ let increment =
        ])
 
 let decrement =
-  get_typed_term_unsafe
+  typed_term
     (Abstraction
        [
          (zero.stype, seven.term);
@@ -61,7 +60,7 @@ let fix_binary_num_op = fix three_bit_type unary_num_op
 let fix_unary_num_op = fix three_bit_type three_bit_type
 
 let add =
-  get_typed_term_unsafe
+  typed_term
     (fix_binary_num_op
        (Abstraction
           [
@@ -69,7 +68,7 @@ let add =
               Abstraction
                 [
                   (zero.stype, Abstraction [ (three_bit_type, Variable 0) ]);
-                  ( get_type_union
+                  ( type_union
                       [
                         one.stype;
                         two.stype;
@@ -82,25 +81,23 @@ let add =
                     Abstraction
                       [
                         ( three_bit_type,
-                          Application
-                            ( Application
-                                ( Variable 2,
-                                  Application (decrement.term, Variable 1) ),
-                              Application (increment.term, Variable 0) ) );
+                          binary_apply (Variable 2)
+                            (Application (decrement.term, Variable 1))
+                            (Application (increment.term, Variable 0)) );
                       ] );
                 ] );
           ]))
 
 let fib =
-  get_typed_term_unsafe
+  typed_term
     (fix_unary_num_op
        (Abstraction
           [
             ( unary_num_op,
               Abstraction
                 [
-                  (get_type_union [ zero.stype; one.stype ], one.term);
-                  ( get_type_union
+                  (type_union [ zero.stype; one.stype ], one.term);
+                  ( type_union
                       [
                         two.stype;
                         three.stype;
@@ -109,17 +106,13 @@ let fib =
                         six.stype;
                         seven.stype;
                       ],
-                    Application
-                      ( Application
-                          ( add.term,
-                            Application
-                              ( Variable 1,
-                                Application (decrement.term, Variable 0) ) ),
-                        Application
-                          ( Variable 1,
-                            Application
-                              ( decrement.term,
-                                Application (decrement.term, Variable 0) ) ) )
-                  );
+                    binary_apply add.term
+                      (Application
+                         (Variable 1, Application (decrement.term, Variable 0)))
+                      (Application
+                         ( Variable 1,
+                           Application
+                             ( decrement.term,
+                               Application (decrement.term, Variable 0) ) )) );
                 ] );
           ]))

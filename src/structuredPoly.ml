@@ -6,63 +6,48 @@ open TypeOperations.Context
 open StructuredHelpers
 open StructuredBool
 open StructuredRecursive
+open TermOperations.Helpers
 
-let name_label = get_typed_term_unsafe (Const "Name")
-let val_label = get_typed_term_unsafe (Const "Val")
-let next_label = get_typed_term_unsafe (Const "Next")
-let nil_label = get_typed_term_unsafe (Const "Nil")
-let cons_label = get_typed_term_unsafe (Const "Cons")
-let none_label = get_typed_term_unsafe (Const "None")
+let name_label = typed_term (Const "Name")
+let val_label = typed_term (Const "Val")
+let next_label = typed_term (Const "Next")
+let nil_label = typed_term (Const "Nil")
+let cons_label = typed_term (Const "Cons")
+let none_label = typed_term (Const "None")
 
 let polymoprhic_identity =
-  get_typed_term_unsafe
-    (UnivQuantifier
-       (Abstraction [ (base_to_structured_type (UnivTypeVar 0), Variable 0) ]))
+  typed_term
+    (UnivQuantifier (Abstraction [ (base_type (UnivTypeVar 0), Variable 0) ]))
 
 let polymorphic_double =
-  get_typed_term_unsafe
+  typed_term
     (UnivQuantifier
        (Abstraction
           [
-            ( func_to_structured_type ([ UnivTypeVar 0 ], [ UnivTypeVar 0 ]),
+            ( func_type ([ UnivTypeVar 0 ], [ UnivTypeVar 0 ]),
               Abstraction
                 [
-                  ( base_to_structured_type (UnivTypeVar 0),
+                  ( base_type (UnivTypeVar 0),
                     Application
                       (Variable 1, Application (Variable 1, Variable 0)) );
                 ] );
           ]))
 
+let polymorphic_double_poly =
+  UnivApplication (polymorphic_double.term, base_type (UnivTypeVar 0))
+
 let polymorphic_quadruple =
-  get_typed_term_unsafe
+  typed_term
     (UnivQuantifier
        (Application
           ( UnivApplication
               ( polymorphic_double.term,
-                func_to_structured_type ([ UnivTypeVar 0 ], [ UnivTypeVar 0 ])
+                func_type ([ UnivTypeVar 0 ], [ UnivTypeVar 0 ])
               ),
-            UnivApplication
-              (polymorphic_double.term, base_to_structured_type (UnivTypeVar 0))
-          )))
-
-let ind_poly_list_union = [ UnivQuantification [ RecTypeVar 0 ] ]
-
-let ind_poly_list_context =
-  [
-    ( Inductive,
-      [
-        FIntersection [ (name_label.stype.union, nil_label.stype.union) ];
-        FIntersection
-          [
-            (name_label.stype.union, cons_label.stype.union);
-            (val_label.stype.union, [ UnivTypeVar 0 ]);
-            (next_label.stype.union, [ RecTypeVar 0 ]);
-          ];
-      ] );
-  ]
+            polymorphic_double_poly )))
 
 let empty_list =
-  get_typed_term_unsafe (Abstraction [ (name_label.stype, nil_label.term) ])
+  typed_term (Abstraction [ (name_label.stype, nil_label.term) ])
 
 type list_type_pair = { full : structured_type; non_empty : structured_type }
 
@@ -114,7 +99,7 @@ let build_list_type_pair (kind : recursive_kind) (elt_type : structured_type) =
 
 (* Converts a list of terms to a term in the lambda calculus representing that list *)
 let rec build_list_term (term_list : term list) =
-  get_typed_term_unsafe (build_list_term_rec term_list)
+  typed_term (build_list_term_rec term_list)
 
 and build_list_term_rec (term_list : term list) =
   match term_list with
@@ -128,10 +113,22 @@ and build_list_term_rec (term_list : term list) =
           (next_label.stype, rest_list);
         ]
 
+let build_bool_list_term (bools : bool list) =
+  let term_list =
+    List.map
+      (function true -> true_lambda.term | false -> false_lambda.term)
+      bools
+  in
+  build_list_term term_list
+
+let build_int_list_term (ints : int list) =
+  let term_list = (List.map num_term) ints in
+  build_list_term term_list
+
 let boolean_list_type = build_list_type_pair Inductive bool_type
 
 let polymoprhic_list_type =
-  build_list_type_pair Inductive (base_to_structured_type (UnivTypeVar 0))
+  build_list_type_pair Inductive (base_type (UnivTypeVar 0))
 
 let (list_with_num_union, num_with_list_union), list_num_context =
   get_unified_type_context_pair polymoprhic_list_type.full ind_integer
@@ -172,13 +169,33 @@ let binary_list_op =
     [ Intersection [ (polymoprhic_list_type.full.union, unary_list_op.union) ] ]
     polymoprhic_list_type.full.context
 
+(* Represents `X -> Bool`, the condition function for filtering polymoprhic lists *)
+let poly_to_bool_op =
+  func_type ([ UnivTypeVar 0 ], bool_type.union)
+
+(* Represents `(X -> Bool) -> List X` *)
+let cond_to_list_op =
+  build_structured_type
+    [
+      Intersection [ (poly_to_bool_op.union, polymoprhic_list_type.full.union) ];
+    ]
+    polymoprhic_list_type.full.context
+
+(* Represents `List X -> (X -> Bool) -> List X`, the signature for the polymoprhic list function *)
+let filter_op =
+  build_structured_type
+    [
+      Intersection [ (polymoprhic_list_type.full.union, cond_to_list_op.union) ];
+    ]
+    polymoprhic_list_type.full.context
+
 (* Polymoprhic function that prepends an element of arbitrary tpye to a list of that type *)
 let cons =
-  get_typed_term_unsafe
+  typed_term
     (UnivQuantifier
        (Abstraction
           [
-            ( base_to_structured_type (UnivTypeVar 0),
+            ( base_type (UnivTypeVar 0),
               Abstraction
                 [
                   ( polymoprhic_list_type.full,
@@ -191,9 +208,12 @@ let cons =
                 ] );
           ]))
 
+let cons_poly =
+  UnivApplication (cons.term, base_type (UnivTypeVar 0))
+
 (* Polymoprhic function that determines if a list is empty or not *)
 let is_empty =
-  get_typed_term_unsafe
+  typed_term
     (UnivQuantifier
        (Abstraction
           [
@@ -203,7 +223,7 @@ let is_empty =
 
 (* Polymorphic function to get the first element of a list, or None if the list is empty *)
 let head =
-  get_typed_term_unsafe
+  typed_term
     (UnivQuantifier
        (Abstraction
           [
@@ -212,9 +232,12 @@ let head =
             (empty_list.stype, none_label.term);
           ]))
 
+let head_poly =
+  UnivApplication (head.term, base_type (UnivTypeVar 0))
+
 (* Polymoprhic function to get all elements of a list except the first, or None is the list is empty *)
 let tail =
-  get_typed_term_unsafe
+  typed_term
     (UnivQuantifier
        (Abstraction
           [
@@ -223,13 +246,17 @@ let tail =
             (empty_list.stype, none_label.term);
           ]))
 
+let tail_poly =
+  UnivApplication (tail.term, base_type (UnivTypeVar 0))
+
 let fix_list_to_num = fix polymoprhic_list_type.full ind_integer
 let fix_list_idx = fix polymoprhic_list_type.full idx_to_elt_op
 let fix_unary_list = fix polymoprhic_list_type.full polymoprhic_list_type.full
 let fix_binary_list = fix polymoprhic_list_type.full unary_list_op
+let fix_filter = fix polymoprhic_list_type.full cond_to_list_op
 
 let length =
-  get_typed_term_unsafe
+  typed_term
     (UnivQuantifier
        (fix_list_to_num
           (Abstraction
@@ -241,20 +268,15 @@ let length =
                        Application
                          ( increment.term,
                            Application
-                             ( Variable 1,
-                               Application
-                                 ( UnivApplication
-                                     ( tail.term,
-                                       base_to_structured_type (UnivTypeVar 0)
-                                     ),
-                                   Variable 0 ) ) ) );
+                             (Variable 1, Application (tail_poly, Variable 0))
+                         ) );
                      (empty_list.stype, zero.term);
                    ] );
              ])))
 
 (* TODO: update the fixed type so that we can infer that empty lists always return none *)
 let nth =
-  get_typed_term_unsafe
+  typed_term
     (UnivQuantifier
        (fix_list_idx
           (Abstraction
@@ -265,23 +287,11 @@ let nth =
                      ( polymoprhic_list_type.non_empty,
                        Abstraction
                          [
-                           ( zero.stype,
-                             Application
-                               ( UnivApplication
-                                   ( head.term,
-                                     base_to_structured_type (UnivTypeVar 0) ),
-                                 Variable 1 ) );
+                           (zero.stype, Application (head_poly, Variable 1));
                            ( ind_positive_number,
-                             Application
-                               ( Application
-                                   ( Variable 2,
-                                     Application
-                                       ( UnivApplication
-                                           ( tail.term,
-                                             base_to_structured_type
-                                               (UnivTypeVar 0) ),
-                                         Variable 1 ) ),
-                                 Application (decrement.term, Variable 0) ) );
+                             binary_apply (Variable 2)
+                               (Application (tail_poly, Variable 1))
+                               (Application (decrement.term, Variable 0)) );
                          ] );
                      ( empty_list.stype,
                        Abstraction [ (ind_natural_number, none_label.term) ] );
@@ -289,7 +299,7 @@ let nth =
              ])))
 
 let concat =
-  get_typed_term_unsafe
+  typed_term
     (UnivQuantifier
        (fix_binary_list
           (Abstraction
@@ -301,28 +311,11 @@ let concat =
                        Abstraction
                          [
                            ( polymoprhic_list_type.full,
-                             Application
-                               ( Application
-                                   ( UnivApplication
-                                       ( cons.term,
-                                         base_to_structured_type (UnivTypeVar 0)
-                                       ),
-                                     Application
-                                       ( UnivApplication
-                                           ( head.term,
-                                             base_to_structured_type
-                                               (UnivTypeVar 0) ),
-                                         Variable 1 ) ),
-                                 Application
-                                   ( Application
-                                       ( Variable 2,
-                                         Application
-                                           ( UnivApplication
-                                               ( tail.term,
-                                                 base_to_structured_type
-                                                   (UnivTypeVar 0) ),
-                                             Variable 1 ) ),
-                                     Variable 0 ) ) );
+                             binary_apply cons_poly
+                               (Application (head_poly, Variable 1))
+                               (binary_apply (Variable 2)
+                                  (Application (tail_poly, Variable 1))
+                                  (Variable 0)) );
                          ] );
                      ( empty_list.stype,
                        Abstraction [ (polymoprhic_list_type.full, Variable 0) ]
@@ -330,33 +323,28 @@ let concat =
                    ] );
              ])))
 
+let concat_poly =
+  UnivApplication (concat.term, base_type (UnivTypeVar 0))
+
 let append =
-  get_typed_term_unsafe
+  typed_term
     (UnivQuantifier
        (Abstraction
           [
             ( polymoprhic_list_type.full,
               Abstraction
                 [
-                  ( base_to_structured_type (UnivTypeVar 0),
-                    Application
-                      ( Application
-                          ( UnivApplication
-                              ( concat.term,
-                                base_to_structured_type (UnivTypeVar 0) ),
-                            Variable 1 ),
-                        Application
-                          ( Application
-                              ( UnivApplication
-                                  ( cons.term,
-                                    base_to_structured_type (UnivTypeVar 0) ),
-                                Variable 0 ),
-                            empty_list.term ) ) );
+                  ( base_type (UnivTypeVar 0),
+                    binary_apply concat_poly (Variable 1)
+                      (binary_apply cons_poly (Variable 0) empty_list.term) );
                 ] );
           ]))
 
+let append_poly =
+  UnivApplication (append.term, base_type (UnivTypeVar 0))
+
 let reverse =
-  get_typed_term_unsafe
+  typed_term
     (UnivQuantifier
        (fix_unary_list
           (Abstraction
@@ -365,34 +353,56 @@ let reverse =
                  Abstraction
                    [
                      ( polymoprhic_list_type.non_empty,
-                       Application
-                         ( Application
-                             ( UnivApplication
-                                 ( append.term,
-                                   base_to_structured_type (UnivTypeVar 0) ),
-                               Application
-                                 ( Variable 1,
-                                   Application
-                                     ( UnivApplication
-                                         ( tail.term,
-                                           base_to_structured_type
-                                             (UnivTypeVar 0) ),
-                                       Variable 0 ) ) ),
-                           Application
-                             ( UnivApplication
-                                 ( head.term,
-                                   base_to_structured_type (UnivTypeVar 0) ),
-                               Variable 0 ) ) );
+                       binary_apply append_poly
+                         (Application
+                            (Variable 1, Application (tail_poly, Variable 0)))
+                         (Application (head_poly, Variable 0)) );
                      (empty_list.stype, empty_list.term);
                    ] );
              ])))
 
+let filter =
+  typed_term
+    (UnivQuantifier
+       (fix_filter
+          (Abstraction
+             [
+               ( filter_op,
+                 Abstraction
+                   [
+                     ( polymoprhic_list_type.non_empty,
+                       Abstraction
+                         [
+                           ( poly_to_bool_op,
+                             Application
+                               ( Abstraction
+                                   [
+                                     ( true_lambda.stype,
+                                       binary_apply cons_poly
+                                         (Application (head_poly, Variable 2))
+                                         (binary_apply (Variable 3)
+                                            (Application (tail_poly, Variable 2))
+                                            (Variable 1)) );
+                                     ( false_lambda.stype,
+                                       binary_apply (Variable 3)
+                                         (Application (tail_poly, Variable 2))
+                                         (Variable 1) );
+                                   ],
+                                 Application
+                                   ( Variable 0,
+                                     Application (head_poly, Variable 1) ) ) );
+                         ] );
+                     ( empty_list.stype,
+                       Abstraction [ (poly_to_bool_op, empty_list.term) ] );
+                   ] );
+             ])))
+
 (* List functions we should implement:
- * equal
  * filter
  * map
  * fold_left/fold_right
- * find (return element and/or index)
  * forall/exists
+ * equal
+ * find (return element and/or index)
  * flatten
  *)

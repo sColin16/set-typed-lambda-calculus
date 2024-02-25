@@ -26,7 +26,7 @@ and get_type_rec (term : term) (type_context : type_context_map) (level : int) :
   match term with
   (* Constants always have label types *)
   (* TODO: use the base_to_structured function for this. Need to move it into TypeOperation, I think *)
-  | Const name -> Some (build_structured_type [ Label name ] [])
+  | Const name -> Some (label_type name)
   (* Use the helper function to determine if an application is well-typed *)
   | Application (t1, t2) ->
       let left_type = get_type_rec t1 type_context level in
@@ -143,7 +143,7 @@ and get_univ_application_type (quantifier : structured_type)
   (* Aggregate the return types - if any of them were none, the application is not well-typed *)
   let return_types_opt = opt_list_to_list_opt return_opt_types in
   (* Combine all of the structured types, merging both the unions and and contexts *)
-  Option.map (fun return_types -> get_type_union return_types) return_types_opt
+  Option.map (fun return_types -> type_union return_types) return_types_opt
 
 and get_univ_application_option_type
     ((func_option, context1) : flat_base_type * recursive_context)

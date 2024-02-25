@@ -1,48 +1,40 @@
 open LambdaCalculus.StructuredPoly
 open LambdaCalculus.StructuredBool
-open LambdaCalculus.Structured.TermOperations.Eval
-open LambdaCalculus.Structured.TermOperations.ValToTerm
 open LambdaCalculus.Structured.TypeOperations.Subtype
 open LambdaCalculus.Structured.Metatypes
 open LambdaCalculus.StructuredHelpers
 open LambdaCalculus.StructuredRecursive
 open TypeOperations.Create
-open TypeOperations.Context
 open TypeOperations.Intersection
+open TermTypes
+open TypeOperations.Map
+open LambdaCalculus.TestHelpers
+open TermOperations.Helpers
 
-let test (name : string) (result : bool) =
-  Printf.printf "%s: %s\n" (if result then "PASS" else "FAIL") name
+let univ_quantify_union (union : union_type) = [ UnivQuantification union ]
 
-let evaluates_to term value = value_to_term (eval term) = value
+let identity_int =
+  typed_term (UnivApplication (polymoprhic_identity.term, ind_integer))
 
-let is_equivalent_type (t1 : structured_type) (t2 : structured_type) =
-  is_subtype t1 t2 && is_subtype t2 t1
+let identity_bool =
+  typed_term (UnivApplication (polymoprhic_identity.term, bool_type))
 
-let is_strict_subtype (t1 : structured_type) (t2 : structured_type) =
-  is_subtype t1 t2 && not (is_subtype t2 t1)
+let double_int =
+  typed_term (UnivApplication (polymorphic_double.term, ind_integer))
 
-let applied_poly_identity =
-  get_typed_term_unsafe
-    (UnivApplication (polymoprhic_identity.term, name_label.stype))
-
-let applied_poly_double =
-  get_typed_term_unsafe (UnivApplication (polymorphic_double.term, ind_integer))
-
-let applied_poly_quadruple =
-  get_typed_term_unsafe
-    (UnivApplication (polymorphic_quadruple.term, ind_integer))
+let quadruple_int =
+  typed_term (UnivApplication (polymorphic_quadruple.term, ind_integer))
 
 let expected_poly_identity_type =
-  base_to_structured_type
+  base_type
     (UnivQuantification
        [ Intersection [ ([ UnivTypeVar 0 ], [ UnivTypeVar 0 ]) ] ])
 
 let expected_applied_poly_type =
-  base_to_structured_type
-    (Intersection [ (name_label.stype.union, name_label.stype.union) ])
+  map_type (fun integer -> [ Intersection [ (integer, integer) ] ]) ind_integer
 
 let expected_poly_map_type =
-  base_to_structured_type
+  base_type
     (UnivQuantification
        [
          Intersection
@@ -53,178 +45,166 @@ let expected_poly_map_type =
        ])
 
 let expected_poly_map_applied_type =
-  build_structured_type
-    [
-      Intersection
-        [
-          ( [ Intersection [ (ind_integer.union, ind_integer.union) ] ],
-            [ Intersection [ (ind_integer.union, ind_integer.union) ] ] );
-        ];
-    ]
-    ind_integer.context
+  map_type
+    (fun int ->
+      [
+        Intersection
+          [ ([ Intersection [ (int, int) ] ], [ Intersection [ (int, int) ] ]) ];
+      ])
+    ind_integer
 
 (* Represents `forall X. X -> List X -> List X`, when final return can be asserted to be non-empty *)
 let expected_cons_supertype =
-  build_structured_type
-    [
-      UnivQuantification
-        [
-          Intersection
-            [
-              ( [ UnivTypeVar 0 ],
-                [
-                  Intersection
-                    [
-                      ( polymoprhic_list_type.full.union,
-                        polymoprhic_list_type.full.union );
-                    ];
-                ] );
-            ];
-        ];
-    ]
-    polymoprhic_list_type.full.context
-
-(* Recontextualize this type so we can use both types in the type below *)
-(* TODO: investigate replacing this with a call to get_unified_type_context_pair *)
-let recontexted_non_empty =
-  get_type_in_context polymoprhic_list_type.non_empty
-    polymoprhic_list_type.full.context
+  map_type
+    (fun polymoprhic_list_union ->
+      [
+        UnivQuantification
+          [
+            Intersection
+              [
+                ( [ UnivTypeVar 0 ],
+                  [
+                    Intersection
+                      [ (polymoprhic_list_union, polymoprhic_list_union) ];
+                  ] );
+              ];
+          ];
+      ])
+    polymoprhic_list_type.full
 
 (* Represents `forall X. X -> List X -> NonEmptyList X` which is the most specific type *)
 let expected_cons_type =
-  build_structured_type
-    [
-      UnivQuantification
-        [
-          Intersection
-            [
-              ( [ UnivTypeVar 0 ],
-                [
-                  Intersection
-                    [
-                      ( polymoprhic_list_type.full.union,
-                        recontexted_non_empty.union );
-                    ];
-                ] );
-            ];
-        ]
-      (* Use the combined context for this type *);
-    ]
-    recontexted_non_empty.context
+  map_type2
+    (fun list non_empty ->
+      [
+        UnivQuantification
+          [
+            Intersection
+              [ ([ UnivTypeVar 0 ], [ Intersection [ (list, non_empty) ] ]) ];
+          ];
+      ])
+    polymoprhic_list_type.full polymoprhic_list_type.non_empty
 
 (* Represents `forall X. (NonEmptyList X -> false) & (EmptyList -> true)`, the most specific type *)
 let expected_is_empty_type =
-  build_structured_type
-    [
-      UnivQuantification
-        [
-          Intersection
-            [
-              (polymoprhic_list_type.non_empty.union, false_lambda.stype.union);
-              (empty_list.stype.union, true_lambda.stype.union);
-            ];
-        ];
-    ]
-    polymoprhic_list_type.non_empty.context
+  map_type
+    (fun non_empty ->
+      [
+        UnivQuantification
+          [
+            Intersection
+              [
+                (non_empty, false_lambda.stype.union);
+                (empty_list.stype.union, true_lambda.stype.union);
+              ];
+          ];
+      ])
+    polymoprhic_list_type.non_empty
 
 (* Represents `forall X. List X -> Bool` a more general type for the function *)
 let expected_is_empty_supertype =
-  build_structured_type
-    [
-      UnivQuantification
-        [ Intersection [ (polymoprhic_list_type.full.union, bool_type.union) ] ];
-    ]
-    polymoprhic_list_type.full.context
+  map_type
+    (fun list ->
+      [ UnivQuantification [ Intersection [ (list, bool_type.union) ] ] ])
+    polymoprhic_list_type.full
 
 (* Represents `forall X. (NonEmptyList X -> X) & (EmptyList -> None)`, the most specific type *)
 let expected_head_type =
-  build_structured_type
-    [
-      UnivQuantification
-        [
-          Intersection
-            [
-              (polymoprhic_list_type.non_empty.union, [ UnivTypeVar 0 ]);
-              (empty_list.stype.union, none_label.stype.union);
-            ];
-        ];
-    ]
-    polymoprhic_list_type.non_empty.context
+  map_type
+    (fun non_empty ->
+      [
+        UnivQuantification
+          [
+            Intersection
+              [
+                (non_empty, [ UnivTypeVar 0 ]);
+                (empty_list.stype.union, none_label.stype.union);
+              ];
+          ];
+      ])
+    polymoprhic_list_type.non_empty
 
 (* Represents `forall X. (List X -> X | None)` a more general type *)
 let expected_head_supertype =
-  build_structured_type
-    [
-      UnivQuantification
-        [
-          Intersection
-            [
-              ( polymoprhic_list_type.full.union,
-                UnivTypeVar 0 :: none_label.stype.union );
-            ];
-        ];
-    ]
-    polymoprhic_list_type.full.context
+  map_type
+    (fun list ->
+      [
+        UnivQuantification
+          [ Intersection [ (list, UnivTypeVar 0 :: none_label.stype.union) ] ];
+      ])
+    polymoprhic_list_type.full
 
 (* Represents `forall X. (NonEmptyList X -> List X) & (EmptyList -> None)`, the most specific type *)
 let expected_tail_type =
-  build_structured_type
-    [
-      UnivQuantification
-        [
-          Intersection
-            [
-              (recontexted_non_empty.union, polymoprhic_list_type.full.union);
-              (empty_list.stype.union, none_label.stype.union);
-            ];
-        ];
-    ]
-    recontexted_non_empty.context
+  map_type2
+    (fun list non_empty ->
+      [
+        UnivQuantification
+          [
+            Intersection
+              [
+                (non_empty, list);
+                (empty_list.stype.union, none_label.stype.union);
+              ];
+          ];
+      ])
+    polymoprhic_list_type.full polymoprhic_list_type.non_empty
 
 (* Represents `forall X. (List X -> (List X) | None), the more general type *)
 let expected_tail_supertype =
-  build_structured_type
-    [
-      UnivQuantification
-        [
-          Intersection
-            [
-              ( polymoprhic_list_type.full.union,
-                none_label.stype.union @ polymoprhic_list_type.full.union );
-            ];
-        ];
-    ]
-    polymoprhic_list_type.full.context
+  map_type
+    (fun list ->
+      [
+        UnivQuantification
+          [ Intersection [ (list, none_label.stype.union @ list) ] ];
+      ])
+    polymoprhic_list_type.full
 
 (* TODO: assert that this functions returns a non-empty list with types *)
 let expected_append_type =
-  build_structured_type
-    [
-      UnivQuantification
-        [
-          Intersection
-            [
-              ( polymoprhic_list_type.full.union,
-                [
-                  Intersection
-                    [ ([ UnivTypeVar 0 ], polymoprhic_list_type.full.union) ];
-                ] );
-            ];
-        ];
-    ]
-    polymoprhic_list_type.full.context
+  map_type
+    (fun list ->
+      [
+        UnivQuantification
+          [
+            Intersection
+              [ (list, [ Intersection [ ([ UnivTypeVar 0 ], list) ] ]) ];
+          ];
+      ])
+    polymoprhic_list_type.full
 
-let simple_boolean_list =
-  build_list_term [ true_lambda.term; false_lambda.term ]
+let simple_boolean_list = build_bool_list_term [ true; false ]
+let simple_integer_list = build_int_list_term [ -1; 1; 2; -2 ]
+let integer_list_b = build_int_list_term [ 0; -1 ]
+let integer_list_combined = build_int_list_term [ -1; 1; 2; -2; 0; -1 ]
+let is_empty_bool = typed_term (UnivApplication (is_empty.term, bool_type))
+let head_bool = typed_term (UnivApplication (head.term, bool_type))
+let tail_bool = typed_term (UnivApplication (tail.term, bool_type))
+let length_bool = typed_term (UnivApplication (length.term, bool_type))
+let length_int = typed_term (UnivApplication (length.term, ind_integer))
+let nth_bool = typed_term (UnivApplication (nth.term, bool_type))
+let nth_int = typed_term (UnivApplication (nth.term, ind_integer))
+let concat_int = typed_term (UnivApplication (concat.term, ind_integer))
+let append_int = typed_term (UnivApplication (append.term, ind_integer))
+let reverse_int = typed_term (UnivApplication (reverse.term, ind_integer))
+let filter_bool = typed_term (UnivApplication (filter.term, bool_type))
+let filter_int = typed_term (UnivApplication (filter.term, ind_integer))
 
-let simple_integer_list =
-  build_list_term [ neg_one.term; one.term; two.term; neg_two.term ]
+let true_predicate =
+  typed_term
+    (UnivQuantifier
+       (Abstraction [ (base_type (UnivTypeVar 0), true_lambda.term) ]))
 
-let integer_list_b = build_list_term [ zero.term; neg_one.term ]
+let false_predicate =
+  typed_term
+    (UnivQuantifier
+       (Abstraction [ (base_type (UnivTypeVar 0), false_lambda.term) ]))
 
-let integer_list_combined =
-  build_list_term
-    [ neg_one.term; one.term; two.term; neg_two.term; zero.term; neg_one.term ]
+let true_predicate_int =
+  typed_term (UnivApplication (true_predicate.term, ind_integer))
+
+let false_predicate_int =
+  typed_term (UnivApplication (false_predicate.term, ind_integer))
 
 let () =
   test "Polymoprhic identity function type"
@@ -232,7 +212,7 @@ let () =
 
 let () =
   test "Polymoprhic identity function applied type"
-    (is_equivalent_type applied_poly_identity.stype expected_applied_poly_type)
+    (is_equivalent_type identity_int.stype expected_applied_poly_type)
 
 let () =
   test "Polymoprhic double function type"
@@ -240,7 +220,7 @@ let () =
 
 let () =
   test "Polymoprhic double function applied type"
-    (is_equivalent_type applied_poly_double.stype expected_poly_map_applied_type)
+    (is_equivalent_type double_int.stype expected_poly_map_applied_type)
 
 let () =
   test "Polymorphic quadruple function type"
@@ -248,43 +228,34 @@ let () =
 
 let () =
   test "Polymoprhic quadruple function applied type"
-    (is_equivalent_type applied_poly_quadruple.stype
-       expected_poly_map_applied_type)
+    (is_equivalent_type quadruple_int.stype expected_poly_map_applied_type)
 
 let () =
   test "Simple polymoprhic evaluation"
-    (evaluates_to
-       (Application (applied_poly_identity.term, name_label.term))
-       name_label.term)
+    (evaluates_to (Application (identity_int.term, zero.term)) zero.term)
 
 let () =
   test "Double polymorphic eval with increment"
     (evaluates_to
-       (Application
-          (Application (applied_poly_double.term, increment.term), two.term))
-       (generate_typed_num 4).term)
+       (binary_apply double_int.term increment.term two.term)
+       (num_term 4))
 
 let () =
   test "Double polymorphic eval with decrement"
     (evaluates_to
-       (Application
-          (Application (applied_poly_double.term, decrement.term), zero.term))
-       (generate_typed_num (-2)).term)
+       (binary_apply double_int.term decrement.term zero.term)
+       (num_term (-2)))
 
 let () =
   test "Quadruple polymorphic with increment"
     (evaluates_to
-       (Application
-          ( Application (applied_poly_quadruple.term, increment.term),
-            (generate_typed_num 6).term ))
-       (generate_typed_num 10).term)
+       (binary_apply quadruple_int.term increment.term (num_term 6))
+       (num_term 10))
 
 let () =
   test "Quadruple polymorphic with decrement"
     (evaluates_to
-       (Application
-          ( Application (applied_poly_quadruple.term, decrement.term),
-            (generate_typed_num 5).term ))
+       (binary_apply quadruple_int.term decrement.term (num_term 5))
        one.term)
 
 let () =
@@ -326,14 +297,13 @@ let () =
 let () =
   test "Polymoprhic is_empty detects empty list correctly"
     (evaluates_to
-       (Application (UnivApplication (is_empty.term, bool_type), empty_list.term))
+       (Application (is_empty_bool.term, empty_list.term))
        true_lambda.term)
 
 let () =
   test "Polymorphic is_empty detects non-empty list correctly"
     (evaluates_to
-       (Application
-          (UnivApplication (is_empty.term, bool_type), simple_boolean_list.term))
+       (Application (is_empty_bool.term, simple_boolean_list.term))
        false_lambda.term)
 
 let () =
@@ -353,13 +323,10 @@ let () =
     (is_strict_subtype tail.stype expected_tail_supertype)
 
 let apply_head_non_empty =
-  get_typed_term_unsafe
-    (Application
-       (UnivApplication (head.term, bool_type), simple_boolean_list.term))
+  typed_term (Application (head_bool.term, simple_boolean_list.term))
 
 let apply_head_empty =
-  get_typed_term_unsafe
-    (Application (UnivApplication (head.term, bool_type), empty_list.term))
+  typed_term (Application (head_bool.term, empty_list.term))
 
 let () =
   test "Polymorphic head pulls first element for non-empty list"
@@ -380,144 +347,100 @@ let () =
 let () =
   test "Polymorphic tail gets rest of list for non-empty list"
     (evaluates_to
-       (Application
-          (UnivApplication (tail.term, bool_type), simple_boolean_list.term))
-       (build_list_term [ false_lambda.term ]).term)
+       (Application (tail_bool.term, simple_boolean_list.term))
+       (build_bool_list_term [ false ]).term)
 
 let () =
   test "Polymoprhic tail returns None for empty list"
     (evaluates_to
-       (Application (UnivApplication (tail.term, bool_type), empty_list.term))
+       (Application (tail_bool.term, empty_list.term))
        none_label.term)
 
 let () =
   test "Length is a list to num operation"
-    (is_subtype length.stype
-       (build_structured_type
-          [ UnivQuantification list_to_num_op.union ]
-          list_to_num_op.context))
+    (is_subtype length.stype (map_type univ_quantify_union list_to_num_op))
 
 let () =
   test "Empty integer list has length 0"
-    (evaluates_to
-       (Application (UnivApplication (length.term, ind_integer), empty_list.term))
-       zero.term)
+    (evaluates_to (Application (length_int.term, empty_list.term)) zero.term)
 
 let () =
   test "Empty boolean list has length 0"
-    (evaluates_to
-       (Application (UnivApplication (length.term, bool_type), empty_list.term))
-       zero.term)
+    (evaluates_to (Application (length_bool.term, empty_list.term)) zero.term)
 
 let () =
   test "Simple boolean list has correct length"
     (evaluates_to
-       (Application
-          (UnivApplication (length.term, bool_type), simple_boolean_list.term))
+       (Application (length_bool.term, simple_boolean_list.term))
        two.term)
 
 let () =
   test "Simple integer list has correct length"
     (evaluates_to
-       (Application
-          (UnivApplication (length.term, ind_integer), simple_integer_list.term))
-       (generate_typed_num 4).term)
+       (Application (length_int.term, simple_integer_list.term))
+       (num_term 4))
 
 let () =
   test "nth is a list index operation"
-    (is_subtype nth.stype
-       (build_structured_type
-          [ UnivQuantification list_idx_op.union ]
-          list_idx_op.context))
+    (is_subtype nth.stype (map_type univ_quantify_union list_idx_op))
 
 let () =
   test "first in empty list is none"
     (evaluates_to
-       (Application
-          ( Application
-              (UnivApplication (nth.term, ind_positive_number), empty_list.term),
-            zero.term ))
+       (binary_apply nth_int.term empty_list.term zero.term)
        none_label.term)
 
 let () =
   test "third in empty list is none"
     (evaluates_to
-       (Application
-          ( Application
-              (UnivApplication (nth.term, ind_positive_number), empty_list.term),
-            (generate_typed_num 3).term ))
+       (binary_apply nth_int.term empty_list.term (num_term 3))
        none_label.term)
 
 let () =
   test "second is simple boolean list is correct"
     (evaluates_to
-       (Application
-          ( Application
-              (UnivApplication (nth.term, bool_type), simple_boolean_list.term),
-            one.term ))
+       (binary_apply nth_bool.term simple_boolean_list.term one.term)
        false_lambda.term)
 
 let () =
   test "third in simple integer list is correct"
     (evaluates_to
-       (Application
-          ( Application
-              (UnivApplication (nth.term, ind_integer), simple_integer_list.term),
-            two.term ))
+       (binary_apply nth_int.term simple_integer_list.term two.term)
        two.term)
 
 let () =
   test "out of bound in integer list is none"
     (evaluates_to
-       (Application
-          ( Application
-              (UnivApplication (nth.term, ind_integer), simple_integer_list.term),
-            (generate_typed_num 7).term ))
+       (binary_apply nth_int.term simple_integer_list.term (num_term 7))
        none_label.term)
 
 let () =
   test "Concat is a binary list operation"
-    (is_subtype concat.stype
-       (build_structured_type
-          [ UnivQuantification binary_list_op.union ]
-          binary_list_op.context))
+    (is_subtype concat.stype (map_type univ_quantify_union binary_list_op))
 
 let () =
   test "Concat two empty lists is empty list"
     (evaluates_to
-       (Application
-          ( Application
-              (UnivApplication (concat.term, ind_integer), empty_list.term),
-            empty_list.term ))
+       (binary_apply concat_int.term empty_list.term empty_list.term)
        empty_list.term)
 
 let () =
   test "Concat empty list with integer list is integer list"
     (evaluates_to
-       (Application
-          ( Application
-              ( UnivApplication (concat.term, ind_integer),
-                simple_integer_list.term ),
-            empty_list.term ))
+       (binary_apply concat_int.term simple_integer_list.term empty_list.term)
        simple_integer_list.term)
 
 let () =
   test "Concat integer list with empty list is integer list"
     (evaluates_to
-       (Application
-          ( Application
-              (UnivApplication (concat.term, ind_integer), empty_list.term),
-            simple_integer_list.term ))
+       (binary_apply concat_int.term empty_list.term simple_integer_list.term)
        simple_integer_list.term)
 
 let () =
   test "Concat two non-empty integer lists is correct"
     (evaluates_to
-       (Application
-          ( Application
-              ( UnivApplication (concat.term, ind_integer),
-                simple_integer_list.term ),
-            integer_list_b.term ))
+       (binary_apply concat_int.term simple_integer_list.term
+          integer_list_b.term)
        integer_list_combined.term)
 
 let () =
@@ -526,38 +449,70 @@ let () =
 let () =
   test "Append to empty list is list with just that element"
     (evaluates_to
-       (Application
-          ( Application
-              (UnivApplication (append.term, ind_integer), empty_list.term),
-            neg_one.term ))
-       (build_list_term [ neg_one.term ]).term)
+       (binary_apply append_int.term empty_list.term neg_one.term)
+       (build_int_list_term [ -1 ]).term)
 
 let () =
   test "Append to non-empty list is correct"
     (evaluates_to
-       (Application
-          ( Application
-              (UnivApplication (append.term, ind_integer), integer_list_b.term),
-            two.term ))
-       (build_list_term [ zero.term; neg_one.term; two.term ]).term)
+       (binary_apply append_int.term integer_list_b.term two.term)
+       (build_int_list_term [ 0; -1; 2 ]).term)
 
 let () =
   test "Reverse is a unary list type"
-    (is_subtype reverse.stype
-       (build_structured_type
-          [ UnivQuantification unary_list_op.union ]
-          unary_list_op.context))
+    (is_subtype reverse.stype (map_type univ_quantify_union unary_list_op))
 
 let () =
   test "Reverse of empty list is empty list"
     (evaluates_to
-       (Application
-          (UnivApplication (reverse.term, ind_integer), empty_list.term))
+       (Application (reverse_int.term, empty_list.term))
        empty_list.term)
 
 let () =
   test "Reverse of integer list is correct"
     (evaluates_to
-       (Application
-          (UnivApplication (reverse.term, ind_integer), simple_integer_list.term))
+       (Application (reverse_int.term, simple_integer_list.term))
        (build_list_term [ neg_two.term; two.term; one.term; neg_one.term ]).term)
+
+let () =
+  test "Filter has the appropriate type"
+    (is_subtype filter.stype (map_type univ_quantify_union filter_op))
+
+let () =
+  test "Filter boolean list with identity"
+    (evaluates_to
+       (binary_apply filter_bool.term simple_boolean_list.term
+          identity_bool.term)
+       (build_bool_list_term [ true ]).term)
+
+let () =
+  test "Filter numeric list for evens"
+    (evaluates_to
+       (binary_apply filter_int.term simple_integer_list.term is_even.term)
+       (build_int_list_term [ 2; -2 ]).term)
+
+let () =
+  test "Filter numeric list for odds"
+    (evaluates_to
+       (binary_apply filter_int.term simple_integer_list.term is_odd.term)
+       (build_int_list_term [ -1; 1 ]).term)
+
+let () =
+  test "Filter empty list yields empty list"
+    (evaluates_to
+       (binary_apply filter_int.term empty_list.term is_even.term)
+       empty_list.term)
+
+let () =
+  test "Filter with always true predicate retains list"
+    (evaluates_to
+       (binary_apply filter_int.term simple_integer_list.term
+          true_predicate_int.term)
+       simple_integer_list.term)
+
+let () =
+  test "Filter with always false predicate clears list"
+    (evaluates_to
+       (binary_apply filter_int.term simple_integer_list.term
+          false_predicate_int.term)
+       empty_list.term)

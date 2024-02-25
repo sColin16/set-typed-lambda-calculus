@@ -1,22 +1,23 @@
 open StructuredHelpers
 open TypeOperations.Union
+open TypeOperations.Create
 
-let true_lambda = get_typed_term_unsafe (Const "True")
-let false_lambda = get_typed_term_unsafe (Const "False")
-let bool_type = get_type_union [ true_lambda.stype; false_lambda.stype ]
-let unary_bool_op = func_to_structured_type (bool_type.union, bool_type.union)
+let true_lambda = typed_term (Const "True")
+let false_lambda = typed_term (Const "False")
+let bool_type = type_union [ true_lambda.stype; false_lambda.stype ]
+let unary_bool_op = func_type (bool_type.union, bool_type.union)
 
 let binary_bool_op =
-  func_to_structured_type (bool_type.union, unary_bool_op.union)
+  func_type (bool_type.union, unary_bool_op.union)
 
 let ternary_bool_op =
-  func_to_structured_type (bool_type.union, binary_bool_op.union)
+  func_type (bool_type.union, binary_bool_op.union)
 
 let identity_lambda =
-  get_typed_term_unsafe (Abstraction [ (bool_type, Variable 0) ])
+  typed_term (Abstraction [ (bool_type, Variable 0) ])
 
 let not_lambda =
-  get_typed_term_unsafe
+  typed_term
     (Abstraction
        [
          (true_lambda.stype, false_lambda.term);
@@ -24,7 +25,7 @@ let not_lambda =
        ])
 
 let and_lambda =
-  get_typed_term_unsafe
+  typed_term
     (Abstraction
        [
          (true_lambda.stype, identity_lambda.term);
@@ -32,7 +33,7 @@ let and_lambda =
        ])
 
 let or_lambda =
-  get_typed_term_unsafe
+  typed_term
     (Abstraction
        [
          (true_lambda.stype, Abstraction [ (bool_type, true_lambda.term) ]);
@@ -40,7 +41,7 @@ let or_lambda =
        ])
 
 let if_lambda =
-  get_typed_term_unsafe
+  typed_term
     (Abstraction
        [
          ( true_lambda.stype,

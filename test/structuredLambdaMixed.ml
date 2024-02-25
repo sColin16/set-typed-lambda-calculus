@@ -1,20 +1,15 @@
-open LambdaCalculus.Structured.TermOperations.Eval
-open LambdaCalculus.Structured.TermOperations.ValToTerm
 open LambdaCalculus.Structured.TypeOperations.Subtype
 open LambdaCalculus.Structured.TypeOperations.Union
 open LambdaCalculus.StructuredArithmetic
 open LambdaCalculus.StructuredBool
 open LambdaCalculus.StructuredMixed
 open LambdaCalculus.StructuredHelpers
-
-let test (name : string) (result : bool) =
-  Printf.printf "%s: %s\n" (if result then "PASS" else "FAIL") name
-
-let evaluates_to term value = value_to_term (eval term) = value
+open LambdaCalculus.TestHelpers
+open TypeOperations.Create
 
 let is_even_odd_type_expected =
-  func_to_structured_type
-    ( (get_type_union [ is_even_label.stype; is_odd_label.stype ]).union,
+  func_type
+    ( (type_union [ is_even_label.stype; is_odd_label.stype ]).union,
       num_to_bool.union )
 
 let () =

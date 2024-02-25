@@ -10,6 +10,7 @@ open LambdaCalculus.StructuredHelpers
 open TermOperations.Eval
 open TermOperations.ValToTerm
 open TermTypes
+open TermOperations.Helpers
 
 let test (name : string) (result : bool) =
   Printf.printf "%s: %s\n" (if result then "PASS" else "FAIL") name
@@ -24,9 +25,8 @@ let evaluates_to term value = value_to_term (eval term) = value
 
 (* Generate a term to check if two numbers are equal, in the lambda calculus *)
 let numeric_terms_equal_term num1 num2 =
-  Application
-    ( Application (is_equal.term, (generate_typed_num num1).term),
-      (generate_typed_num num2).term )
+  binary_apply is_equal.term (typed_term_num num1).term
+    (typed_term_num num2).term
 
 let numeric_terms_equal num1 num2 =
   evaluates_to (numeric_terms_equal_term num1 num2) true_lambda.term
@@ -35,26 +35,24 @@ let numeric_terms_not_equal num1 num2 =
   evaluates_to (numeric_terms_equal_term num1 num2) false_lambda.term
 
 let numeric_terms_add_term num1 num2 =
-  Application
-    ( Application (add.term, (generate_typed_num num1).term),
-      (generate_typed_num num2).term )
+  binary_apply add.term (typed_term_num num1).term (typed_term_num num2).term
 
 let assert_adds_to num1 num2 num3 =
-  evaluates_to (numeric_terms_add_term num1 num2) (generate_typed_num num3).term
+  evaluates_to (numeric_terms_add_term num1 num2) (typed_term_num num3).term
 
 let () =
   test "Coninductive even or odd integers equal to coinductive integer"
     (is_equivalent_type coi_integer
-       (get_type_union [ coi_even_integer; coi_odd_integer ]))
+       (type_union [ coi_even_integer; coi_odd_integer ]))
 
 let () =
   test "Inductive even or odd integers equal to inductive integer"
     (is_equivalent_type ind_integer
-       (get_type_union [ ind_even_integer; ind_odd_integer ]))
+       (type_union [ ind_even_integer; ind_odd_integer ]))
 
 let () =
   test "Inductive integer or pos/neg infinity equal to coinductive integer"
-    (is_equivalent_type coi_integer (get_type_union [ ind_integer; infinity ]))
+    (is_equivalent_type coi_integer (type_union [ ind_integer; infinity ]))
 
 let () =
   test
@@ -196,26 +194,26 @@ let () =
 let () =
   test "Three increments to four"
     (evaluates_to
-       (Application (increment.term, (generate_typed_num 3).term))
-       (generate_typed_num 4).term)
+       (Application (increment.term, (typed_term_num 3).term))
+       (typed_term_num 4).term)
 
 let () =
   test "Negative two increment to negative one"
     (evaluates_to
-       (Application (increment.term, (generate_typed_num (-2)).term))
-       (generate_typed_num (-1)).term)
+       (Application (increment.term, (typed_term_num (-2)).term))
+       (typed_term_num (-1)).term)
 
 let () =
   test "Three decrements to two"
     (evaluates_to
-       (Application (decrement.term, (generate_typed_num 3).term))
-       (generate_typed_num 2).term)
+       (Application (decrement.term, (typed_term_num 3).term))
+       (typed_term_num 2).term)
 
 let () =
   test "Negative one decrements to negative two"
     (evaluates_to
-       (Application (decrement.term, (generate_typed_num (-1)).term))
-       (generate_typed_num (-2)).term)
+       (Application (decrement.term, (typed_term_num (-1)).term))
+       (typed_term_num (-2)).term)
 
 let () =
   test "is_even is a number to bool operation"
@@ -224,13 +222,13 @@ let () =
 let () =
   test "four is even"
     (evaluates_to
-       (Application (is_even.term, (generate_typed_num 4).term))
+       (Application (is_even.term, (typed_term_num 4).term))
        true_lambda.term)
 
 let () =
   test "five is not even"
     (evaluates_to
-       (Application (is_even.term, (generate_typed_num 5).term))
+       (Application (is_even.term, (typed_term_num 5).term))
        false_lambda.term)
 
 let () =

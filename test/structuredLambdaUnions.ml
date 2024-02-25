@@ -6,6 +6,7 @@ open LambdaCalculus.StructuredUnions
 open LambdaCalculus.StructuredHelpers
 open LambdaCalculus.Structured.TermOperations.ValToTerm
 open TypeOperations.Union
+open TermOperations.Helpers
 
 let test (name : string) (result : bool) =
   Printf.printf "%s: %s\n" (if result then "PASS" else "FAIL") name
@@ -15,7 +16,7 @@ let evaluates_to term value = value_to_term (eval term) = value
 let () =
   test "Exhaustive function coverage of union A"
     (is_subtype split_unary_bool
-       (get_type_union
+       (type_union
           [
             split_identity_type;
             split_not_type;
@@ -26,7 +27,7 @@ let () =
 let () =
   test "Exhaustive function coverage of union B"
     (is_subtype
-       (get_type_union
+       (type_union
           [
             split_identity_type;
             split_not_type;
@@ -39,13 +40,13 @@ let () =
   test "Incomplete function coverage of union A"
     (not
        (is_subtype split_unary_bool
-          (get_type_union
+          (type_union
              [ split_identity_type; split_not_type; split_unary_false_type ])))
 
 let () =
   test "Incomplete function coverage of union B"
     (is_subtype
-       (get_type_union
+       (type_union
           [ split_identity_type; split_not_type; split_unary_false_type ])
        split_unary_bool)
 
@@ -53,7 +54,7 @@ let () =
   test "Incomplete function coverage of union C"
     (not
        (is_subtype split_unary_bool
-          (get_type_union
+          (type_union
              [
                split_identity_type;
                split_unary_false_type;
@@ -63,7 +64,7 @@ let () =
 let () =
   test "Incomplete function coverage of union D"
     (is_subtype
-       (get_type_union
+       (type_union
           [ split_identity_type; split_unary_false_type; split_unary_true_type ])
        split_unary_bool)
 
@@ -71,19 +72,19 @@ let () =
   test "Non-unary function splitting A"
     (not
        (is_subtype unary_bool_op
-          (get_type_union [ unary_true_type; unary_false_type ])))
+          (type_union [ unary_true_type; unary_false_type ])))
 
 let () =
   test "Non-unary function splitting B"
     (is_subtype
-       (get_type_union [ unary_true_type; unary_false_type ])
+       (type_union [ unary_true_type; unary_false_type ])
        unary_bool_op)
 
 let () =
   test "Exhaustive function coverage with extras A"
     (is_subtype
-       (get_type_union [ split_unary_bool; and_lambda.stype ])
-       (get_type_union
+       (type_union [ split_unary_bool; and_lambda.stype ])
+       (type_union
           [
             split_identity_type;
             split_not_type;
@@ -95,7 +96,7 @@ let () =
 let () =
   test "Exhaustive function coverage with extras B"
     (is_subtype
-       (get_type_union
+       (type_union
           [
             and_lambda.stype;
             split_identity_type;
@@ -103,7 +104,7 @@ let () =
             split_unary_true_type;
             split_unary_false_type;
           ])
-       (get_type_union [ split_unary_bool; binary_bool_op ]))
+       (type_union [ split_unary_bool; binary_bool_op ]))
 
 let () =
   test "Increment three bit has expected type A"
@@ -135,20 +136,16 @@ let () =
 
 let () =
   test "one plus one"
-    (evaluates_to
-       (Application (Application (add_three_bit.term, one.term), one.term))
-       two.term)
+    (evaluates_to (binary_apply add_three_bit.term one.term one.term) two.term)
 
 let () =
   test "two plus two"
-    (evaluates_to
-       (Application (Application (add_three_bit.term, two.term), two.term))
-       four.term)
+    (evaluates_to (binary_apply add_three_bit.term two.term two.term) four.term)
 
 let () =
   test "three plus seven"
     (evaluates_to
-       (Application (Application (add_three_bit.term, three.term), seven.term))
+       (binary_apply add_three_bit.term three.term seven.term)
        two.term)
 
 let () = test "zero and zero" (has_intersection zero.stype zero.stype)

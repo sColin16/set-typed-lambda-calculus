@@ -4,26 +4,15 @@ open Structured.TypeOperations.Create
 open Structured.TermOperations.Typing
 open Structured.TypeOperations.Union
 open TypeOperations.Context
+open TermOperations.Helpers
 
 type typed_term = { term : term; stype : structured_type }
 
 let build_typed_term (term : term) (stype : structured_type) = { term; stype }
 let get_type_unsafe term = Option.get (get_type term)
-let get_typed_term_unsafe term = build_typed_term term (get_type_unsafe term)
+let typed_term term = build_typed_term term (get_type_unsafe term)
 
-let union_to_structured_type (union_type : union_type) =
-  build_structured_type union_type []
-
-let base_to_structured_type (base_type : base_type) =
-  union_to_structured_type [ base_type ]
-
-let func_to_structured_type (unary_function : unary_function) =
-  base_to_structured_type (Intersection [ unary_function ])
-
-let label_to_structured_type (label : string) =
-  base_to_structured_type (Label label)
-
-let get_type_intersection (types : structured_type list) : structured_type =
+let type_intersection (types : structured_type list) : structured_type =
   let intersection =
     List.fold_left
       (fun acc_intersection next_type ->
@@ -32,10 +21,10 @@ let get_type_intersection (types : structured_type list) : structured_type =
         | _ -> raise (invalid_arg "a type wasn't just an intersection"))
       [] types
   in
-  base_to_structured_type (Intersection intersection)
+  base_type (Intersection intersection)
 
 let get_flat_union_type (union_types : structured_type list) : flat_union_type =
-  let union_type = get_type_union union_types in
+  let union_type = type_union union_types in
   List.map
     (function
       | Label a -> FLabel a
@@ -67,7 +56,7 @@ let build_fix (arg_type : structured_type) (return_type : structured_type) =
   (* Then add that definition to the end of the context so it has the number we assigned it *)
   let new_shared_context = List.append shared_context [ fix_rec_def ] in
   let fix =
-    get_typed_term_unsafe
+    typed_term
       (Abstraction
          [
            ( build_structured_type
@@ -82,10 +71,10 @@ let build_fix (arg_type : structured_type) (return_type : structured_type) =
                          ( Variable 1,
                            Abstraction
                              [
-                               ( build_structured_type new_arg_type new_shared_context,
-                                 Application
-                                   ( Application (Variable 1, Variable 1),
-                                     Variable 0 ) );
+                               ( build_structured_type new_arg_type
+                                   new_shared_context,
+                                 binary_apply (Variable 1) (Variable 1)
+                                   (Variable 0) );
                              ] ) );
                    ],
                  Abstraction
@@ -96,10 +85,10 @@ let build_fix (arg_type : structured_type) (return_type : structured_type) =
                          ( Variable 1,
                            Abstraction
                              [
-                               ( build_structured_type new_arg_type new_shared_context,
-                                 Application
-                                   ( Application (Variable 1, Variable 1),
-                                     Variable 0 ) );
+                               ( build_structured_type new_arg_type
+                                   new_shared_context,
+                                 binary_apply (Variable 1) (Variable 1)
+                                   (Variable 0) );
                              ] ) );
                    ] ) );
          ])
