@@ -209,6 +209,31 @@ let map_op =
       ])
     list_transform_op
 
+(* Represents `Acc -> Elt -> Acc`, the function defining a step of a fold operation *)
+let fold_step =
+  func_type
+    ( [ UnivTypeVar 0 ],
+      [ Intersection [ ([ UnivTypeVar 1 ], [ UnivTypeVar 0 ]) ] ] )
+
+(* Represents `Acc -> Elt List -> Acc`, part of the fold operation *)
+let list_acc_op =
+  map_type
+    (fun list ->
+      [
+        Intersection
+          [
+            ([ UnivTypeVar 0 ], [ Intersection [ (list, [ UnivTypeVar 0 ]) ] ]);
+          ];
+      ])
+    polymorphic_list_type_nested1.full
+
+(* Represents `(Acc -> Elt -> Acc) -> Acc -> Elt List -> Acc`, the type for fold *)
+let fold_op =
+  map_type2
+    (fun fold_step_union list_acc_union ->
+      [ Intersection [ (fold_step_union, list_acc_union) ] ])
+    fold_step list_acc_op
+
 (* Polymoprhic function that prepends an element of arbitrary tpye to a list of that type *)
 let cons =
   typed_term
@@ -267,13 +292,15 @@ let tail =
 
 let tail_poly = UnivApplication (tail.term, base_type (UnivTypeVar 0))
 let tail_poly_nested1 = UnivApplication (tail.term, base_type (UnivTypeVar 1))
-
 let fix_list_to_num = fix polymoprhic_list_type.full ind_integer
 let fix_list_idx = fix polymoprhic_list_type.full idx_to_elt_op
 let fix_unary_list = fix polymoprhic_list_type.full polymoprhic_list_type.full
 let fix_binary_list = fix polymoprhic_list_type.full unary_list_op
 let fix_filter = fix polymoprhic_list_type.full cond_to_list_op
-let fix_map = fix (func_type ([UnivTypeVar 1], [UnivTypeVar 0])) list_transform_op
+let fix_fold = fix fold_step list_acc_op
+
+let fix_map =
+  fix (func_type ([ UnivTypeVar 1 ], [ UnivTypeVar 0 ])) list_transform_op
 
 let length =
   typed_term
@@ -438,6 +465,35 @@ let map =
                                      (Application (tail_poly_nested1, Variable 0)))
                               );
                               (empty_list.stype, empty_list.term);
+                            ] );
+                      ] );
+                ]))))
+
+let fold_left =
+  typed_term
+    (UnivQuantifier
+       (UnivQuantifier
+          (fix_fold
+             (Abstraction
+                [
+                  ( fold_op,
+                    Abstraction
+                      [
+                        ( fold_step,
+                          Abstraction
+                            [
+                              ( base_type (UnivTypeVar 0),
+                                Abstraction
+                                  [
+                                    ( polymorphic_list_type_nested1.non_empty,
+                                      trinary_apply (Variable 3) (Variable 2)
+                                        (binary_apply (Variable 2) (Variable 1)
+                                           (Application
+                                              (head_poly_nested1, Variable 0)))
+                                        (Application
+                                           (tail_poly_nested1, Variable 0)) );
+                                    (empty_list.stype, Variable 1);
+                                  ] );
                             ] );
                       ] );
                 ]))))

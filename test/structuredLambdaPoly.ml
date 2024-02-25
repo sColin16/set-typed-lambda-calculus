@@ -180,6 +180,7 @@ let simple_boolean_list = build_bool_list_term [ true; false ]
 let simple_integer_list = build_int_list_term [ -1; 1; 2; -2 ]
 let integer_list_b = build_int_list_term [ 0; -1 ]
 let integer_list_combined = build_int_list_term [ -1; 1; 2; -2; 0; -1 ]
+let incrementing_integer_list = build_int_list_term [ 1; 2; 3; 4 ]
 let is_empty_bool = typed_term (UnivApplication (is_empty.term, bool_type))
 let head_bool = typed_term (UnivApplication (head.term, bool_type))
 let tail_bool = typed_term (UnivApplication (tail.term, bool_type))
@@ -196,6 +197,10 @@ let filter_int = typed_term (UnivApplication (filter.term, ind_integer))
 let map_int_bool =
   typed_term
     (UnivApplication (UnivApplication (map.term, ind_integer), bool_type))
+
+let fold_int_int =
+  typed_term
+    (UnivApplication (UnivApplication (fold_left.term, ind_integer), ind_integer))
 
 let true_predicate =
   typed_term
@@ -546,8 +551,26 @@ let () =
        (binary_apply map_int_bool.term is_odd.term simple_integer_list.term)
        (build_bool_list_term [ true; true; false; false ]).term)
 
-let () = test "Map always returning false is correct"
+let () =
+  test "Map always returning false is correct"
     (evaluates_to
-      (binary_apply map_int_bool.term false_predicate_int.term simple_integer_list.term)
-      (build_bool_list_term [ false; false; false; false]).term
-    )
+       (binary_apply map_int_bool.term false_predicate_int.term
+          simple_integer_list.term)
+       (build_bool_list_term [ false; false; false; false ]).term)
+
+let () =
+  test "Fold left has appropriate type"
+    (is_subtype fold_left.stype (map_type univ_quantify_union_double fold_op))
+
+let () =
+  test "Fold left uses accumulator for empty list"
+    (evaluates_to
+       (trinary_apply fold_int_int.term add.term two.term empty_list.term)
+       two.term)
+
+let () =
+  test "Fold left sums integer list"
+    (evaluates_to
+       (trinary_apply fold_int_int.term add.term zero.term
+          incrementing_integer_list.term)
+       (num_term 10))
