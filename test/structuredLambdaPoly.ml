@@ -203,6 +203,7 @@ let fold_int_int =
     (UnivApplication (UnivApplication (fold_left.term, ind_integer), ind_integer))
 
 let every_int = typed_term (UnivApplication (every.term, ind_integer))
+let exists_int = typed_term (UnivApplication (exists.term, ind_integer))
 
 let true_predicate =
   typed_term
@@ -620,3 +621,31 @@ let () =
              ])
           incrementing_integer_list.term)
        true_lambda.term)
+
+let () =
+  test "Exists function has the right type"
+    (is_subtype exists.stype list_predicate_type)
+
+let () =
+  test "Exists function called on empty list returns false"
+    (evaluates_to
+       (binary_apply exists_int.term is_even.term empty_list.term)
+       false_lambda.term)
+
+let () =
+  test "Exists is_even on simple list is true"
+    (evaluates_to
+       (binary_apply exists_int.term is_even.term simple_integer_list.term)
+       true_lambda.term)
+
+let () =
+  test "Exists is_negative on incrementing integer list is false"
+    (evaluates_to
+       (binary_apply exists_int.term
+          (Abstraction
+             [
+               (ind_negative_number, true_lambda.term);
+               (ind_natural_number, false_lambda.term);
+             ])
+          incrementing_integer_list.term)
+       false_lambda.term)
