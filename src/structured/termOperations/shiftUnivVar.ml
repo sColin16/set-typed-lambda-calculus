@@ -2,6 +2,7 @@ open Metatypes
 open TermTypes
 open Common.Helpers
 open TypeOperations.Create
+open GetContextShifts
 
 (** Utilities for shifting universal quantification variables represented by de Bruijn indices *)
 
@@ -51,24 +52,37 @@ and shift_univ_var_term_rec (shift_amount : int) (cutoff : int) (term : term) =
 
 and shift_univ_var_type_rec (shift_amount : int) (cutoff : int)
     (stype : structured_type) =
-  (* Shift the recursive context and union separately, then combine *)
-  let shifted_context =
-    shift_univ_var_context shift_amount cutoff stype.context
-  in
+  (* Shift the universal type variables in the union type *)
   let shifted_union = shift_univ_var_union shift_amount cutoff stype.union in
+  (* Determine the shifts that need to be made to the recursive context *)
+  let context_shifts =
+    get_context_shifts { shift_amount; cutoff } stype.union stype.context
+  in
+  (* Shift the context accordingly *)
+  let shifted_context = shift_univ_var_context stype.context context_shifts in
   let shifted_type = build_structured_type shifted_union shifted_context in
   shifted_type
 
-and shift_univ_var_context (shift_amount : int) (cutoff : int)
-    (context : recursive_context) =
-  List.map (shift_univ_var_context_def shift_amount cutoff) context
+and shift_univ_var_context (context : recursive_context)
+    (context_shifts : context_shifts) =
+  (* Shift each recursive definition with the appropriate directive (if any) *)
+  (* TODO: shift based on the shift directives, rather than for each element in the context to simplify *)
+  List.mapi
+    (fun idx context_def ->
+      shift_univ_var_context_def context_def
+        (IntMap.find_opt idx context_shifts))
+    context
 
-and shift_univ_var_context_def (shift_amount : int) (cutoff : int)
-    ({ kind; flat_union } : recursive_def) =
-  {
-    kind;
-    flat_union = shift_univ_var_flat_union shift_amount cutoff flat_union;
-  }
+and shift_univ_var_context_def ({ kind; flat_union } : recursive_def)
+    (shift_directive_opt : shift_directive option) =
+  (* If the shift directive is None, then skip, otherwise shift the definition according to the directive *)
+  if Option.is_none shift_directive_opt then { kind; flat_union }
+  else
+    let { shift_amount; cutoff } = Option.get shift_directive_opt in
+    {
+      kind;
+      flat_union = shift_univ_var_flat_union shift_amount cutoff flat_union;
+    }
 
 and shift_univ_var_flat_union (shift_amount : int) (cutoff : int)
     (flat_union : flat_union_type) =
@@ -102,7 +116,7 @@ and shift_univ_var_union (shift_amount : int) (cutoff : int)
 
 and shift_univ_var_base (shift_amount : int) (cutoff : int) (base : base_type) =
   match base with
-  (* Labels and recursive type variables don't need to be shifted (context is shifted separately) *)
+  (* Labels and recursive type variables don't need to be shifted (recursive shifting happens in other step) *)
   | Label _ | RecTypeVar _ -> base
   (* Intersections are shifted recursively *)
   | Intersection branches ->
