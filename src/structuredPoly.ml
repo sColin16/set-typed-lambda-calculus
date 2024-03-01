@@ -498,9 +498,37 @@ let fold_left =
                       ] );
                 ]))))
 
+let fold_left_poly_bool =
+  typed_term
+    (UnivApplication
+       (UnivApplication (fold_left.term, base_type (UnivTypeVar 0)), bool_type))
+
+let every =
+   typed_term
+     (UnivQuantifier
+        (Abstraction
+           [
+             ( poly_to_bool_op,
+               Abstraction
+                 [
+                   ( polymoprhic_list_type.full,
+                     trinary_apply fold_left_poly_bool.term
+                       (Abstraction
+                          [
+                            ( bool_type,
+                              Abstraction
+                                [
+                                  ( base_type (UnivTypeVar 0),
+                                    binary_apply and_lambda.term (Variable 1)
+                                      (Application (Variable 3, Variable 0)) );
+                                ] );
+                          ])
+                       true_lambda.term (Variable 0) );
+                 ] );
+           ]))
+
 (* List functions we should implement:
- * fold_left/fold_right
- * forall/exists
+ * exists
  * equal
  * find (return element and/or index)
  * flatten

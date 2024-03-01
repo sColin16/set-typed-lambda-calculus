@@ -202,6 +202,8 @@ let fold_int_int =
   typed_term
     (UnivApplication (UnivApplication (fold_left.term, ind_integer), ind_integer))
 
+let every_int = typed_term (UnivApplication (every.term, ind_integer))
+
 let true_predicate =
   typed_term
     (UnivQuantifier
@@ -217,6 +219,22 @@ let true_predicate_int =
 
 let false_predicate_int =
   typed_term (UnivApplication (false_predicate.term, ind_integer))
+
+(* Represents `forall X. (X -> Bool) -> X List -> Bool`, the type for every and exists *)
+let list_predicate_type =
+  map_type
+    (fun list ->
+      [
+        UnivQuantification
+          [
+            Intersection
+              [
+                ( [ Intersection [ ([ UnivTypeVar 0 ], bool_type.union) ] ],
+                  [ Intersection [ (list, bool_type.union) ] ] );
+              ];
+          ];
+      ])
+    polymoprhic_list_type.full
 
 let () =
   test "Polymoprhic identity function type"
@@ -574,3 +592,31 @@ let () =
        (trinary_apply fold_int_int.term add.term zero.term
           incrementing_integer_list.term)
        (num_term 10))
+
+let () =
+  test "Every function has the right type"
+    (is_subtype every.stype list_predicate_type)
+
+let () =
+  test "Every function called on empty list returns true"
+    (evaluates_to
+       (binary_apply every_int.term is_even.term empty_list.term)
+       true_lambda.term)
+
+let () =
+  test "Every is_even on simple list is false"
+    (evaluates_to
+       (binary_apply every_int.term is_even.term simple_integer_list.term)
+       false_lambda.term)
+
+let () =
+  test "Every is_positive on incrementing integer list is true"
+    (evaluates_to
+       (binary_apply every_int.term
+          (Abstraction
+             [
+               (ind_positive_number, true_lambda.term);
+               (ind_non_positive_number, false_lambda.term);
+             ])
+          incrementing_integer_list.term)
+       true_lambda.term)
