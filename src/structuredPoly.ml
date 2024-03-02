@@ -254,6 +254,23 @@ let binary_bool_list_op =
       [ Intersection [ (binary_poly_bool, binary_list_bool) ] ])
     binary_poly_bool_op binary_list_bool_op
 
+(* Represents `X -> Bool`, the first part of the find function *)
+let poly_bool_op = func_type ([ UnivTypeVar 0 ], bool_type.union)
+
+(* Represents `X List -> X | None`, the second half of the find function *)
+let list_extract_op =
+  map_type
+    (fun list ->
+      [ Intersection [ (list, UnivTypeVar 0 :: none_label.stype.union) ] ])
+    polymoprhic_list_type.full
+
+(* Represents `(X -> Bool) -> X List -> X | None`, the type of the find function *)
+let find_op =
+  map_type2
+    (fun poly_bool list_extract ->
+      [ Intersection [ (poly_bool, list_extract) ] ])
+    poly_bool_op list_extract_op
+
 (* Polymoprhic function that prepends an element of arbitrary tpye to a list of that type *)
 let cons =
   typed_term
@@ -328,6 +345,7 @@ let fix_map =
   fix (func_type ([ UnivTypeVar 1 ], [ UnivTypeVar 0 ])) list_transform_op
 
 let fix_equal = fix binary_poly_bool_op binary_list_bool_op
+let fix_find = fix poly_bool_op list_extract_op
 
 let length =
   typed_term
@@ -621,8 +639,39 @@ let equal =
                    ] );
              ])))
 
+let find =
+  typed_term
+    (UnivQuantifier
+       (fix_find
+          (Abstraction
+             [
+               ( find_op,
+                 Abstraction
+                   [
+                     ( poly_bool_op,
+                       Abstraction
+                         [
+                           (empty_list.stype, none_label.term);
+                           ( polymoprhic_list_type.non_empty,
+                             Application
+                               ( Abstraction
+                                   [
+                                     ( true_lambda.stype,
+                                       Application (head_poly.term, Variable 1)
+                                     );
+                                     ( false_lambda.stype,
+                                       binary_apply (Variable 3) (Variable 2)
+                                         (Application
+                                            (tail_poly.term, Variable 1)) );
+                                   ],
+                                 Application
+                                   ( Variable 1,
+                                     Application (head_poly.term, Variable 0) )
+                               ) );
+                         ] );
+                   ] );
+             ])))
+
 (* List functions we should implement:
- * equal
- * find (return element and/or index)
  * flatten
  *)

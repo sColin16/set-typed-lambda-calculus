@@ -205,6 +205,7 @@ let fold_int_int =
 let every_int = typed_term (UnivApplication (every.term, ind_integer))
 let exists_int = typed_term (UnivApplication (exists.term, ind_integer))
 let equal_int = typed_term (UnivApplication (equal.term, ind_integer))
+let find_int = typed_term (UnivApplication (find.term, ind_integer))
 
 let true_predicate =
   typed_term
@@ -696,3 +697,31 @@ let () =
        (trinary_apply equal_int.term is_equal.term simple_integer_list.term
           incrementing_integer_list.term)
        false_lambda.term)
+
+let () =
+  test "Find has the right type"
+    (is_subtype find.stype (map_type univ_quantify_union find_op))
+
+let () =
+  test "Find in empty list returns None"
+    (evaluates_to
+       (binary_apply find_int.term is_even.term empty_list.term)
+       none_label.term)
+
+let () =
+  test "Find is_even in simple integer list returns 2"
+    (evaluates_to
+       (binary_apply find_int.term is_even.term simple_integer_list.term)
+       (num_term 2))
+
+let () =
+  test "Find is_positive in simple integer list returns 1"
+    (evaluates_to
+       (binary_apply find_int.term
+          (Abstraction
+             [
+               (ind_positive_number, true_lambda.term);
+               (ind_non_positive_number, false_lambda.term);
+             ])
+          simple_integer_list.term)
+       (num_term 1))
