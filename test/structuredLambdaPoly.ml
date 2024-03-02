@@ -204,6 +204,7 @@ let fold_int_int =
 
 let every_int = typed_term (UnivApplication (every.term, ind_integer))
 let exists_int = typed_term (UnivApplication (exists.term, ind_integer))
+let equal_int = typed_term (UnivApplication (equal.term, ind_integer))
 
 let true_predicate =
   typed_term
@@ -647,5 +648,51 @@ let () =
                (ind_negative_number, true_lambda.term);
                (ind_natural_number, false_lambda.term);
              ])
+          incrementing_integer_list.term)
+       false_lambda.term)
+
+let () =
+  test "Equal has the right type"
+    (is_subtype equal.stype (map_type univ_quantify_union binary_bool_list_op))
+
+let () =
+  test "Empty lists are equal"
+    (evaluates_to
+       (trinary_apply equal_int.term is_equal.term empty_list.term
+          empty_list.term)
+       true_lambda.term)
+
+let () =
+  test "Empty and non-empty list are not equal"
+    (evaluates_to
+       (trinary_apply equal_int.term is_equal.term empty_list.term
+          simple_integer_list.term)
+       false_lambda.term)
+
+let () =
+  test "Non-empty and empty list are not equal"
+    (evaluates_to
+       (trinary_apply equal_int.term is_equal.term simple_integer_list.term
+          empty_list.term)
+       false_lambda.term)
+
+let () =
+  test "Identical lists are equal"
+    (evaluates_to
+       (trinary_apply equal_int.term is_equal.term simple_integer_list.term
+          simple_integer_list.term)
+       true_lambda.term)
+
+let () =
+  test "Lists with mismatched links are not equal"
+    (evaluates_to
+       (trinary_apply equal_int.term is_equal.term simple_integer_list.term
+          integer_list_combined.term)
+       false_lambda.term)
+
+let () =
+  test "Lists with same length but different elements are not equal"
+    (evaluates_to
+       (trinary_apply equal_int.term is_equal.term simple_integer_list.term
           incrementing_integer_list.term)
        false_lambda.term)

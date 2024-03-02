@@ -234,6 +234,26 @@ let fold_op =
       [ Intersection [ (fold_step_union, list_acc_union) ] ])
     fold_step list_acc_op
 
+(* Represents `X -> X -> Bool`, the equality function provided to check list equality *)
+let binary_poly_bool_op =
+  func_type
+    ( [ UnivTypeVar 0 ],
+      [ Intersection [ ([ UnivTypeVar 0 ], bool_type.union) ] ] )
+
+(* Represents `X List -> X List -> Bool`, the second half of the list quality function *)
+let binary_list_bool_op =
+  map_type
+    (fun list ->
+      [ Intersection [ (list, [ Intersection [ (list, bool_type.union) ] ]) ] ])
+    polymoprhic_list_type.full
+
+(* Represents `(X -> X -> Bool) -> X List -> X List -> Bool`, the type for the equal function *)
+let binary_bool_list_op =
+  map_type2
+    (fun binary_poly_bool binary_list_bool ->
+      [ Intersection [ (binary_poly_bool, binary_list_bool) ] ])
+    binary_poly_bool_op binary_list_bool_op
+
 (* Polymoprhic function that prepends an element of arbitrary tpye to a list of that type *)
 let cons =
   typed_term
@@ -276,8 +296,11 @@ let head =
             (empty_list.stype, none_label.term);
           ]))
 
-let head_poly = UnivApplication (head.term, base_type (UnivTypeVar 0))
-let head_poly_nested1 = UnivApplication (head.term, base_type (UnivTypeVar 1))
+let head_poly =
+  typed_term (UnivApplication (head.term, base_type (UnivTypeVar 0)))
+
+let head_poly_nested1 =
+  typed_term (UnivApplication (head.term, base_type (UnivTypeVar 1)))
 
 (* Polymoprhic function to get all elements of a list except the first, or None is the list is empty *)
 let tail =
@@ -290,7 +313,9 @@ let tail =
             (empty_list.stype, none_label.term);
           ]))
 
-let tail_poly = UnivApplication (tail.term, base_type (UnivTypeVar 0))
+let tail_poly =
+  typed_term (UnivApplication (tail.term, base_type (UnivTypeVar 0)))
+
 let tail_poly_nested1 = UnivApplication (tail.term, base_type (UnivTypeVar 1))
 let fix_list_to_num = fix polymoprhic_list_type.full ind_integer
 let fix_list_idx = fix polymoprhic_list_type.full idx_to_elt_op
@@ -301,6 +326,8 @@ let fix_fold = fix fold_step list_acc_op
 
 let fix_map =
   fix (func_type ([ UnivTypeVar 1 ], [ UnivTypeVar 0 ])) list_transform_op
+
+let fix_equal = fix binary_poly_bool_op binary_list_bool_op
 
 let length =
   typed_term
@@ -315,8 +342,8 @@ let length =
                        Application
                          ( increment.term,
                            Application
-                             (Variable 1, Application (tail_poly, Variable 0))
-                         ) );
+                             ( Variable 1,
+                               Application (tail_poly.term, Variable 0) ) ) );
                      (empty_list.stype, zero.term);
                    ] );
              ])))
@@ -334,10 +361,10 @@ let nth =
                      ( polymoprhic_list_type.non_empty,
                        Abstraction
                          [
-                           (zero.stype, Application (head_poly, Variable 1));
+                           (zero.stype, Application (head_poly.term, Variable 1));
                            ( ind_positive_number,
                              binary_apply (Variable 2)
-                               (Application (tail_poly, Variable 1))
+                               (Application (tail_poly.term, Variable 1))
                                (Application (decrement.term, Variable 0)) );
                          ] );
                      ( empty_list.stype,
@@ -359,9 +386,9 @@ let concat =
                          [
                            ( polymoprhic_list_type.full,
                              binary_apply cons_poly
-                               (Application (head_poly, Variable 1))
+                               (Application (head_poly.term, Variable 1))
                                (binary_apply (Variable 2)
-                                  (Application (tail_poly, Variable 1))
+                                  (Application (tail_poly.term, Variable 1))
                                   (Variable 0)) );
                          ] );
                      ( empty_list.stype,
@@ -400,8 +427,9 @@ let reverse =
                      ( polymoprhic_list_type.non_empty,
                        binary_apply append_poly
                          (Application
-                            (Variable 1, Application (tail_poly, Variable 0)))
-                         (Application (head_poly, Variable 0)) );
+                            ( Variable 1,
+                              Application (tail_poly.term, Variable 0) ))
+                         (Application (head_poly.term, Variable 0)) );
                      (empty_list.stype, empty_list.term);
                    ] );
              ])))
@@ -424,18 +452,22 @@ let filter =
                                    [
                                      ( true_lambda.stype,
                                        binary_apply cons_poly
-                                         (Application (head_poly, Variable 2))
+                                         (Application
+                                            (head_poly.term, Variable 2))
                                          (binary_apply (Variable 3)
-                                            (Application (tail_poly, Variable 2))
+                                            (Application
+                                               (tail_poly.term, Variable 2))
                                             (Variable 1)) );
                                      ( false_lambda.stype,
                                        binary_apply (Variable 3)
-                                         (Application (tail_poly, Variable 2))
+                                         (Application
+                                            (tail_poly.term, Variable 2))
                                          (Variable 1) );
                                    ],
                                  Application
                                    ( Variable 0,
-                                     Application (head_poly, Variable 1) ) ) );
+                                     Application (head_poly.term, Variable 1) )
+                               ) );
                          ] );
                      ( empty_list.stype,
                        Abstraction [ (poly_to_bool_op, empty_list.term) ] );
@@ -460,7 +492,7 @@ let map =
                                   (Application
                                      ( Variable 1,
                                        Application
-                                         (head_poly_nested1, Variable 0) ))
+                                         (head_poly_nested1.term, Variable 0) ))
                                   (binary_apply (Variable 2) (Variable 1)
                                      (Application (tail_poly_nested1, Variable 0)))
                               );
@@ -489,7 +521,8 @@ let fold_left =
                                       trinary_apply (Variable 3) (Variable 2)
                                         (binary_apply (Variable 2) (Variable 1)
                                            (Application
-                                              (head_poly_nested1, Variable 0)))
+                                              ( head_poly_nested1.term,
+                                                Variable 0 )))
                                         (Application
                                            (tail_poly_nested1, Variable 0)) );
                                     (empty_list.stype, Variable 1);
@@ -550,6 +583,43 @@ let exists =
                       false_lambda.term (Variable 0) );
                 ] );
           ]))
+
+let equal =
+  typed_term
+    (UnivQuantifier
+       (fix_equal
+          (Abstraction
+             [
+               ( binary_bool_list_op,
+                 Abstraction
+                   [
+                     ( binary_poly_bool_op,
+                       Abstraction
+                         [
+                           ( empty_list.stype,
+                             Abstraction
+                               [
+                                 (empty_list.stype, true_lambda.term);
+                                 ( polymoprhic_list_type.non_empty,
+                                   false_lambda.term );
+                               ] );
+                           ( polymoprhic_list_type.non_empty,
+                             Abstraction
+                               [
+                                 (empty_list.stype, false_lambda.term);
+                                 ( polymoprhic_list_type.non_empty,
+                                   binary_apply and_lambda.term
+                                     (binary_apply (Variable 2)
+                                        (Application (head_poly.term, Variable 1))
+                                        (Application (head_poly.term, Variable 0)))
+                                     (trinary_apply (Variable 3) (Variable 2)
+                                        (Application (tail_poly.term, Variable 1))
+                                        (Application (tail_poly.term, Variable 0)))
+                                 );
+                               ] );
+                         ] );
+                   ] );
+             ])))
 
 (* List functions we should implement:
  * equal
