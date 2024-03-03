@@ -9,19 +9,12 @@ open TypeOperations.Context
 open SubstituteUnivVar
 open TypeOperations.Union
 
-module TypeContextMap = Map.Make (struct
-  type t = int
-
-  let compare = compare
-end)
-
-type type_context_map = structured_type TypeContextMap.t
+type var_type_env = structured_type list
 
 (** [type_lambda_term term] determines the type of a term, if it is well-typed *)
-let rec get_type (term : term) = get_type_rec term TypeContextMap.empty (-1)
+let rec get_type (term : term) = get_type_rec term []
 
-(* TODO: is this type context just an environment? Could I simplify by prepending to the front of the list to avoid the level? *)
-and get_type_rec (term : term) (type_context : type_context_map) (level : int) :
+and get_type_rec (term : term) (var_type_env : var_type_env) :
     structured_type option =
   match term with
   (* Constants always have label types *)
@@ -29,8 +22,8 @@ and get_type_rec (term : term) (type_context : type_context_map) (level : int) :
   | Const name -> Some (label_type name)
   (* Use the helper function to determine if an application is well-typed *)
   | Application (t1, t2) ->
-      let left_type = get_type_rec t1 type_context level in
-      let right_type = get_type_rec t2 type_context level in
+      let left_type = get_type_rec t1 var_type_env in
+      let right_type = get_type_rec t2 var_type_env in
       flat_map_opt2 get_application_type left_type right_type
   (* Abstractions are well-typed if their argument types don't match
      The return types of the body can be inferred recursively from the argument type *)
@@ -50,10 +43,8 @@ and get_type_rec (term : term) (type_context : type_context_map) (level : int) :
         let body_opt_types =
           List.map
             (fun (arg_type, body) ->
-              let new_type_context =
-                TypeContextMap.add (level + 1) arg_type type_context
-              in
-              get_type_rec body new_type_context (level + 1))
+              let new_var_type_env = arg_type :: var_type_env in
+              get_type_rec body new_var_type_env)
             definitions
         in
         let body_types_opt = opt_list_to_list_opt body_opt_types in
@@ -61,10 +52,10 @@ and get_type_rec (term : term) (type_context : type_context_map) (level : int) :
           (fun body_types -> unify_function_types arg_types body_types)
           body_types_opt
   (* The type of a variable is based on the type of the argument in the abstraction defining it *)
-  | Variable var_num -> TypeContextMap.find_opt (level - var_num) type_context
+  | Variable var_num -> List.nth_opt var_type_env var_num
   (* Determine the type within the quantifier, then merge the recursive contexts and build the appropriate union type *)
   | UnivQuantifier inner_term ->
-      let inner_type_opt = get_type_rec inner_term type_context level in
+      let inner_type_opt = get_type_rec inner_term var_type_env in
       Option.map
         (fun inner_type ->
           build_structured_type
@@ -72,7 +63,7 @@ and get_type_rec (term : term) (type_context : type_context_map) (level : int) :
             inner_type.context)
         inner_type_opt
   | UnivApplication (inner_term, inner_type) ->
-      let inner_term_type_opt = get_type_rec inner_term type_context level in
+      let inner_term_type_opt = get_type_rec inner_term var_type_env in
       Option.join
         (Option.map
            (fun inner_term_type ->
