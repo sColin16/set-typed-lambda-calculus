@@ -3,7 +3,8 @@ open Helpers
 open WellFounded
 
 (** Constructs a structured type from its constituent union type and recursive context *)
-let build_structured_type (union : union_type) (context : recursive_context) =
+let build_structured_type (union : union_type) (context : recursive_context) :
+    structured_type =
   { union; context }
 
 (** Constructs a single entry in a recursive context *)
@@ -29,17 +30,14 @@ let to_contractive_type (union : union_type) (context : recursive_context) =
   build_structured_type (to_contractive_union union context) context
 
 (** Constructs a structured type from a union_type *)
-let union_type (union_type : union_type) =
-  build_structured_type union_type []
+let union_type (union_type : union_type) = build_structured_type union_type []
 
 (** Constructs a structured type from a base_type *)
-let base_type (base_type : base_type) =
-  union_type [ base_type ]
+let base_type (base_type : base_type) = union_type [ base_type ]
 
 (** Constructs a structured type from an argument and return type *)
 let func_type (unary_function : unary_function) =
   base_type (Intersection [ unary_function ])
 
 (** Constructs a structured type from a label string *)
-let label_type (label : string) =
-  base_type (Label label)
+let label_type (label : string) = base_type (Label label)
