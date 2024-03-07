@@ -124,6 +124,14 @@ let build_int_list_term (ints : int list) =
   let term_list = (List.map num_term) ints in
   build_list_term term_list
 
+let build_nested_int_list_term (ints : int list list) =
+  let term_list =
+    (List.map (fun int_list ->
+         build_list_term_rec ((List.map num_term) int_list)))
+      ints
+  in
+  build_list_term term_list
+
 let boolean_list_type = build_list_type_pair Inductive bool_type
 
 let polymoprhic_list_type =
@@ -131,6 +139,9 @@ let polymoprhic_list_type =
 
 let polymorphic_list_type_nested1 =
   build_list_type_pair Inductive (base_type (UnivTypeVar 1))
+
+let polymoprhic_nested_list_type =
+  build_list_type_pair Inductive polymoprhic_list_type.full
 
 let (list_with_num_union, num_with_list_union), list_num_context =
   get_unified_type_context_pair polymoprhic_list_type.full ind_integer
@@ -671,6 +682,22 @@ let find =
                          ] );
                    ] );
              ])))
+
+let fold_left_list_list =
+  typed_term
+    (UnivApplication
+       ( UnivApplication (fold_left.term, polymoprhic_list_type.full),
+         polymoprhic_list_type.full ))
+
+let flatten =
+  typed_term
+    (UnivQuantifier
+       (Abstraction
+          [
+            ( polymoprhic_nested_list_type.full,
+              trinary_apply fold_left_list_list.term concat_poly empty_list.term
+                (Variable 0) );
+          ]))
 
 (* List functions we should implement:
  * flatten

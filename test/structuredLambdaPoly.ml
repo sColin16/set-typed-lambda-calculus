@@ -176,6 +176,12 @@ let expected_append_type =
       ])
     polymoprhic_list_type.full
 
+let expected_flatten_type =
+  map_type2
+    (fun nested_list list ->
+      [ UnivQuantification [ Intersection [ (nested_list, list) ] ] ])
+    polymoprhic_nested_list_type.full polymoprhic_list_type.full
+
 let simple_boolean_list = build_bool_list_term [ true; false ]
 let simple_integer_list = build_int_list_term [ -1; 1; 2; -2 ]
 let integer_list_b = build_int_list_term [ 0; -1 ]
@@ -206,6 +212,7 @@ let every_int = typed_term (UnivApplication (every.term, ind_integer))
 let exists_int = typed_term (UnivApplication (exists.term, ind_integer))
 let equal_int = typed_term (UnivApplication (equal.term, ind_integer))
 let find_int = typed_term (UnivApplication (find.term, ind_integer))
+let flatten_int = typed_term (UnivApplication (flatten.term, ind_integer))
 
 let true_predicate =
   typed_term
@@ -725,3 +732,44 @@ let () =
              ])
           simple_integer_list.term)
        (num_term 1))
+
+let () =
+  test "Flatten has right type" (is_subtype flatten.stype expected_flatten_type)
+
+let () =
+  test "Flatten empty list is empty list"
+    (evaluates_to
+       (Application (flatten_int.term, empty_list.term))
+       empty_list.term)
+
+let () =
+  test "Flatten list of empty lists is empty list"
+    (evaluates_to
+       (Application
+          (flatten_int.term, (build_nested_int_list_term [ []; []; [] ]).term))
+       empty_list.term)
+
+let () =
+  test "Flatten single list is that list"
+    (evaluates_to
+       (Application
+          (flatten_int.term, (build_nested_int_list_term [ [ 1; 2; 3 ] ]).term))
+       (build_int_list_term [ 1; 2; 3 ]).term)
+
+let () =
+  test "Flatten single list with empty lists is that list"
+    (evaluates_to
+       (Application
+          ( flatten_int.term,
+            (build_nested_int_list_term [ []; []; [ 1; 2; 3 ]; [] ]).term ))
+       (build_int_list_term [ 1; 2; 3 ]).term)
+
+let () =
+  test "Flatten multiple lists is correct"
+    (evaluates_to
+       (Application
+          ( flatten_int.term,
+            (build_nested_int_list_term
+               [ []; [ 1 ]; [ 2; 3 ]; []; [ 4; 5 ]; [] ])
+              .term ))
+       (build_int_list_term [ 1; 2; 3; 4; 5 ]).term)
