@@ -1,4 +1,5 @@
 open Metatypes
+open Common.Helpers
 
 type shift_directive = { shift_amount : int; cutoff : int }
 
@@ -42,8 +43,9 @@ and get_context_shifts_base (directive : shift_directive)
 
 and get_context_shifts_func (directive : shift_directive)
     ((arg, return) : unary_function) =
-  let arg_shifts = get_context_shifts_union directive arg in
-  let return_shifts = get_context_shifts_union directive return in
+  let arg_shifts, return_shifts =
+    map_pair (get_context_shifts_union directive) (arg, return)
+  in
   join_context_shift_binary arg_shifts return_shifts
 
 (* Determines the context shifts that should occur as a result of of the initial shifts, including the initial shifts *)

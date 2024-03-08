@@ -6,8 +6,8 @@ open TypeOperations.Create
 open TypeOperations.Intersection
 open TypeOperations.Subtype
 open TypeOperations.Context
-open SubstituteUnivVar
 open TypeOperations.Union
+open TypeOperations.SubstituteUnivVar
 
 type var_type_env = structured_type list
 
@@ -18,7 +18,6 @@ and get_type_rec (term : term) (var_type_env : var_type_env) :
     structured_type option =
   match term with
   (* Constants always have label types *)
-  (* TODO: use the base_to_structured function for this. Need to move it into TypeOperation, I think *)
   | Const name -> Some (label_type name)
   (* Use the helper function to determine if an application is well-typed *)
   | Application (t1, t2) ->
@@ -98,7 +97,6 @@ and get_application_option_type
     (arg : structured_type) : union_type option =
   match func_option with
   (* Label types, universal quantifications, and their variables cannot be applied *)
-  (* TODO: some variables may be able to be applied under bounded quantification *)
   | FLabel _ | FUnivTypeVar _ | FUnivQuantification _ -> None
   (* An application against a function type is well-typed if the function accepts at least as many arguments.
      The return type is the union of all return types that the argument might match with *)

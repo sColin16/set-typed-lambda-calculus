@@ -8,6 +8,7 @@ Structured Lambda is a simply-typed lambda calculus, augmented with the followin
 - Union types
 - Intersection types
 - Inductive and Coinductive types
+- Parametric Polymoprhism
 - Structural subtyping
 
 Structured Lambda's differentiating feature is its structural type system, which allows
@@ -28,6 +29,7 @@ Here are some of the language constructs Structured Lambda can represent:
   - Including overloaded functions (ad-hoc polymorphism)
   - Including recursive functions
 - Classes
+- Polymoprhic data structures (e.g. lists, sets)
 
 Unlike most simply-typed lambda calculi that represent sum and product types as
 first-class language constructs, Structured Lambda defines more foundational types
@@ -41,8 +43,7 @@ the nature of union types. The non-optional type is a subtype of the optional
 version of that same type.
 
 ## Features on the Roadmap
-- Universal type quantification to enable parametric polymorphism (aka "Generics")
-  - Bounded quantification to assert properties of the quantified type
+- Bounded quantification to assert properties of the quantified type
 - Existential type quantification to enable ML-style modules
 - AST's that support named terms, instead of De Bruijn encodings of terms
 - Lexer/Parser to support writing programs outside of the embedded context of OCaml's language

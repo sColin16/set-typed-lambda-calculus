@@ -2,7 +2,8 @@ open Metatypes
 open TermTypes
 open Common.Helpers
 open ShiftUnivVar
-open SubstituteUnivVarType
+open TypeOperations.ShiftUnivVar
+open TypeOperations.SubstituteUnivVar
 
 (* Substitutes the [with_type] into the [in_term] for universal type variables referencing
    the universal quantification at this level (0, or higher if nested within another universal quantifications) *)
@@ -18,21 +19,6 @@ let rec substitute_univ_var_term (with_type : structured_type) (in_term : term)
   (* Finally shift everything down one since we remove a universal quantification where
      the binding quantification is one closer *)
   let final_result = shift_univ_var_term substitution_result (-1) in
-  final_result
-
-(* I believe we want the shifting logic here so that typing can call this to perform a type substitution *)
-and substitute_univ_var_type (with_type : structured_type)
-    (in_type : structured_type) : structured_type =
-  (* Shift the free universal type variables in the with type by one, since they are about to be substituted into a universal quantification,
-     where their binding quantification is further away *)
-  let shifted_with_type = shift_univ_var_type with_type 1 in
-  (* Perform the substitution on universal quantification variables bound to this outermost universal quantification *)
-  let substitution_result =
-    substitute_univ_var_type_rec 0 shifted_with_type in_type
-  in
-  (* Finally, shift all the free universal type variables down one since we can now remove the outermost universal quantification,
-     and so all free universal type variables move one closer to their binding quantifier *)
-  let final_result = shift_univ_var_type substitution_result (-1) in
   final_result
 
 and substitute_univ_var_term_rec (variable_num : int)

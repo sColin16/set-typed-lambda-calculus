@@ -7,7 +7,7 @@ open LambdaCalculus.StructuredRecursive
 open TypeOperations.Create
 open TypeOperations.Intersection
 open TermTypes
-open TypeOperations.Map
+open TypeOperations.MapType
 open LambdaCalculus.TestHelpers
 open TermOperations.Helpers
 

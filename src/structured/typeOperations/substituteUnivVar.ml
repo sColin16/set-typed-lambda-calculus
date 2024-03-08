@@ -1,9 +1,9 @@
 open Metatypes
-open TypeOperations.Create
-open Common.Helpers
-open TypeOperations.Helpers
-open TypeOperations.Context
 open ShiftUnivVar
+open Create
+open Common.Helpers
+open Context
+open Helpers
 
 module IntSet = Set.Make (struct
   type t = int
@@ -29,12 +29,26 @@ type substitution_profile = {
   (* Describes the universal type variable that we aim to subsitute for each recursive type variable *)
   context_subs : context_subs;
 }
+
 (** Describes a substitution, which we use to handle the complexity of recursive contexts before performing substitutions *)
+let rec substitute_univ_var_type (with_type : structured_type)
+    (in_type : structured_type) : structured_type =
+  (* Shift the free universal type variables in the with type by one, since they are about to be substituted into a universal quantification,
+     where their binding quantification is further away *)
+  let shifted_with_type = shift_univ_var_type with_type 1 in
+  (* Perform the substitution on universal quantification variables bound to this outermost universal quantification *)
+  let substitution_result =
+    substitute_univ_var_type_rec 0 shifted_with_type in_type
+  in
+  (* Finally, shift all the free universal type variables down one since we can now remove the outermost universal quantification,
+     and so all free universal type variables move one closer to their binding quantifier *)
+  let final_result = shift_univ_var_type substitution_result (-1) in
+  final_result
 
 (** Substitutes universal type variables with the given number in the in_type
     with the with_type, respecting free variables and the complexities of recursive
     types *)
-let rec substitute_univ_var_type_rec (variable_num : int)
+and substitute_univ_var_type_rec (variable_num : int)
     (with_type : structured_type) (in_type : structured_type) : structured_type
     =
   (* Perform initial pass over substitution to get information we use to safely perform substitution *)

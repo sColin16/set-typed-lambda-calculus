@@ -7,7 +7,7 @@ open StructuredHelpers
 open StructuredBool
 open StructuredRecursive
 open TermOperations.Helpers
-open TypeOperations.Map
+open TypeOperations.MapType
 
 let name_label = typed_term (Const "Name")
 let val_label = typed_term (Const "Val")
@@ -698,7 +698,3 @@ let flatten =
               trinary_apply fold_left_list_list.term concat_poly empty_list.term
                 (Variable 0) );
           ]))
-
-(* List functions we should implement:
- * flatten
- *)
