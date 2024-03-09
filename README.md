@@ -1,9 +1,10 @@
-# Structured Lambda {λ}
-A structurally-typed lambda calculus that serves as a basis for
-structurally-typed functional languages
+# {λ} Set-Typed Lambda Calculus
+A typed lambda calculus with a set-theoretic type system, that serves as the
+theoretical basis for other languages with set-theoretic type systems
 
 ## Overview
-Structured Lambda is a simply-typed lambda calculus, augmented with the following features:
+Set-typed Lambda Calculus is a simply-typed lambda calculus, augmented with the
+following features:
 - Singleton base types
 - Union types
 - Intersection types
@@ -11,19 +12,18 @@ Structured Lambda is a simply-typed lambda calculus, augmented with the followin
 - Parametric Polymoprhism
 - Structural subtyping
 
-Structured Lambda's differentiating feature is its structural type system, which allows
-is to directly and umambiguously represent a wide range of common language constructs,
-all while providing a set-theoretic subtyping sytem that is intuitive to use and accepts
-a huge range of correctly typed programs
+The combination of these features, particularly union and intersection types,
+creates a powerful type system whose types behave like sets, which makes for
+an intuitive type system. The type system can represent a wide range of common
+programming language constructs, but at a more fundamental level, which allows
+for some interesting properties.
 
-Here are some of the language constructs Structured Lambda can represent:
+Here are some of the language constructs Set-Typed Lambda Calculus can represent:
 - Booleans
 - Enums
-- Sum types
-- Product types
-- Nominative types
-- Tuples
-- Records
+- Sum types (a.k.a. tagged unions)
+- Product types (e.g. tuples, records)
+- Nominative types (i.e. subtyping without structural typing properties)
 - Integers/strings of arbitrary size
 - Functions
   - Including overloaded functions (ad-hoc polymorphism)
@@ -31,34 +31,59 @@ Here are some of the language constructs Structured Lambda can represent:
 - Classes
 - Polymoprhic data structures (e.g. lists, sets)
 
-Unlike most simply-typed lambda calculi that represent sum and product types as
-first-class language constructs, Structured Lambda defines more foundational types
-from which sum and product types can be defined. Whereas sum and product types are
-typically nominative in nature, the more foundational types that Structured Lambda
-provides allows sum and product types to be structurally typed. This means that
-product types like record types have the expected width and depth subtyping from
-their representation as the intersection of function types. It also mean that sum
-types like option types have subtyping relationships with their components due to
-the nature of union types. The non-optional type is a subtype of the optional
-version of that same type.
+Typed lambda calculi typically represent sum and product type as first-class
+language constructs, which have specialized semantics and typing rules. For
+example, record types typically have special width and depth subtyping rules
+that are only applicable to records.
+
+In Set-Typed Lambda Calculus, however, sum and product types are derived types,
+and their semantics and typing rules are derived from more fundamental
+constructs of the language
+
+Record types are represented as the intersection of function types, and width
+and depth subtyping arise from the interaction of the typing rules for
+intersections and functions
+
+Tagged unions are represented as the union of tagged types, where tagging is
+accomplished through intersection. No special rules are needed to type tagged
+unions, their properties emerge from the interaction of the building blocks
+of the type system
+
+These more fundamental building blocks allow for interesting use-cases. For
+example, optional types can be represented as a simple union of the underlying
+type and a special "None" label. By their nature, the underlying type is a
+subtype of the optional type, which isn't typically the case in other languages
 
 ## Features on the Roadmap
-- Bounded quantification to assert properties of the quantified type
-- Existential type quantification to enable ML-style modules
+### Core Language Features
+Features that are core parts of the calculus, from which more advanced
+constructs can be built
+- Existential type quantification to enable ML-style modules (as a derived )
+- Bounded polymorphism to assert properties of universal and existentially
+quantified types
+- Intersections of quantifiers, as a generalization of abstraction
+intersections, and as a means to implement provide different implementations for
+polymoprhic types, depending on the argument type
+- Higher kinded-types and type-level programming
+
+### External Language Features
+Features that would be included in a higher-level language, to more directly
+provide familiar language constructs
 - AST's that support named terms, instead of De Bruijn encodings of terms
 - Lexer/Parser to support writing programs outside of the embedded context of OCaml's language
 - Let constructs to enable more intuitively expressive programs
   - These simply provide syntactic sugar over abstractions
 - Type ascription to abstract details of a type away and support information hiding
-- Type-level programming, including type aliases for more expressiveness surrounding types
+- Type aliases for more expssiveness surrounding types
 - Effect systems to augment the type system and express when exceptions are
   thrown or impure operations occur
 - Type inference to avoid the requirement for type annotations everywhere
 
 ## Inspiration
-Structured Lambda is inspired by TypeScript's structural type system, which includes union,
-intersection, and literal types. In fact, Structured Lambda was born from an attempt
-to formalize the sorts of type constructs that TypeScript provides
+Set-Typed Lambda Calculus is inspired by TypeScript's set-theoretic and
+structurally-typed type system, which includes union, intersection, and literal
+types. In fact, Set-Typed Lambda Calculus was born from an attempt to formalize
+the sorts of type constructs that TypeScript provides
 
 ## Open Questions
 - How to efficiently implement the type-based branching of lambda terms. It is similar
