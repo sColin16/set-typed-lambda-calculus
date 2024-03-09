@@ -83,7 +83,7 @@ let () =
 let () =
   test "Exhaustive function coverage with extras A"
     (is_subtype
-       (type_union [ split_unary_bool; and_lambda.stype ])
+       (type_union [ split_unary_bool; and_lambda.rtype ])
        (type_union
           [
             split_identity_type;
@@ -98,7 +98,7 @@ let () =
     (is_subtype
        (type_union
           [
-            and_lambda.stype;
+            and_lambda.rtype;
             split_identity_type;
             split_not_type;
             split_unary_true_type;
@@ -108,31 +108,31 @@ let () =
 
 let () =
   test "Increment three bit has expected type A"
-    (is_subtype increment_three_bit.stype increment_three_bit_type_expected)
+    (is_subtype increment_three_bit.rtype increment_three_bit_type_expected)
 
 let () =
   test "Increment three bit has expected type B"
-    (is_subtype increment_three_bit_type_expected increment_three_bit.stype)
+    (is_subtype increment_three_bit_type_expected increment_three_bit.rtype)
 
 let () =
   test "Decrement three bit has expected type A"
-    (is_subtype decrement_three_bit.stype decrement_three_bit_type_expected)
+    (is_subtype decrement_three_bit.rtype decrement_three_bit_type_expected)
 
 let () =
   test "Decrement three bit has expected type B"
-    (is_subtype decrement_three_bit_type_expected decrement_three_bit.stype)
+    (is_subtype decrement_three_bit_type_expected decrement_three_bit.rtype)
 
 let () =
   test "Increment three bit is a unary number operation"
-    (is_subtype increment_three_bit.stype unary_num_type)
+    (is_subtype increment_three_bit.rtype unary_num_type)
 
 let () =
   test "Decrement three bit is a unary number operation"
-    (is_subtype decrement_three_bit.stype unary_num_type)
+    (is_subtype decrement_three_bit.rtype unary_num_type)
 
 let () =
   test "Add is a bunary number operation"
-    (is_subtype add_three_bit.stype binary_num_type)
+    (is_subtype add_three_bit.rtype binary_num_type)
 
 let () =
   test "one plus one"
@@ -148,9 +148,9 @@ let () =
        (binary_apply add_three_bit.term three.term seven.term)
        two.term)
 
-let () = test "zero and zero" (has_intersection zero.stype zero.stype)
-let () = test "zero and one" (not (has_intersection zero.stype one.stype))
-let () = test "one and two" (not (has_intersection one.stype two.stype))
-let () = test "zero and two" (not (has_intersection zero.stype two.stype))
-let () = test "different functions A" (not (is_subtype one.stype two.stype))
-let () = test "different functions B" (not (is_subtype two.stype one.stype))
+let () = test "zero and zero" (has_intersection zero.rtype zero.rtype)
+let () = test "zero and one" (not (has_intersection zero.rtype one.rtype))
+let () = test "one and two" (not (has_intersection one.rtype two.rtype))
+let () = test "zero and two" (not (has_intersection zero.rtype two.rtype))
+let () = test "different functions A" (not (is_subtype one.rtype two.rtype))
+let () = test "different functions B" (not (is_subtype two.rtype one.rtype))

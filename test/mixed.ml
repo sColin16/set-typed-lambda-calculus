@@ -9,20 +9,20 @@ open TypeOperations.Create
 
 let is_even_odd_type_expected =
   func_type
-    ( (type_union [ is_even_label.stype; is_odd_label.stype ]).union,
+    ( (type_union [ is_even_label.rtype; is_odd_label.rtype ]).union,
       num_to_bool.union )
 
 let () =
-  test "is_zero is num to bool type" (is_subtype is_zero.stype num_to_bool)
+  test "is_zero is num to bool type" (is_subtype is_zero.rtype num_to_bool)
 
 let () =
   test "is_even_odd has expected mutually recursive type"
-    (is_subtype is_even_odd.stype is_even_odd_type_expected)
+    (is_subtype is_even_odd.rtype is_even_odd_type_expected)
 
 let () =
-  test "is_even is num to bool type" (is_subtype is_even.stype num_to_bool)
+  test "is_even is num to bool type" (is_subtype is_even.rtype num_to_bool)
 
-let () = test "is_odd is num to bool type" (is_subtype is_odd.stype num_to_bool)
+let () = test "is_odd is num to bool type" (is_subtype is_odd.rtype num_to_bool)
 
 let () =
   test "zero is zero"

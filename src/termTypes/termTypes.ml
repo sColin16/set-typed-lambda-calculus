@@ -1,15 +1,15 @@
 open Metatypes
 
 type term =
-  | Abstraction of (structured_type * term) list
+  | Abstraction of (recursive_type * term) list
   | Application of term * term
   | Variable of int
   | Const of string
   | UnivQuantifier of term
-  | UnivApplication of term * structured_type
+  | UnivApplication of term * recursive_type
 
 and value =
-  | Closure of (structured_type * term) list * environment
+  | Closure of (recursive_type * term) list * environment
   | VUnivQuantifier of term
   | VConst of string
 

@@ -15,14 +15,14 @@ let seven = typed_term (Const "Seven")
 let three_bit_type =
   type_union
     [
-      zero.stype;
-      one.stype;
-      two.stype;
-      three.stype;
-      four.stype;
-      five.stype;
-      six.stype;
-      seven.stype;
+      zero.rtype;
+      one.rtype;
+      two.rtype;
+      three.rtype;
+      four.rtype;
+      five.rtype;
+      six.rtype;
+      seven.rtype;
     ]
 
 let unary_num_op = func_type (three_bit_type.union, three_bit_type.union)
@@ -32,28 +32,28 @@ let increment =
   typed_term
     (Abstraction
        [
-         (zero.stype, one.term);
-         (one.stype, two.term);
-         (two.stype, three.term);
-         (three.stype, four.term);
-         (four.stype, five.term);
-         (five.stype, six.term);
-         (six.stype, seven.term);
-         (seven.stype, zero.term);
+         (zero.rtype, one.term);
+         (one.rtype, two.term);
+         (two.rtype, three.term);
+         (three.rtype, four.term);
+         (four.rtype, five.term);
+         (five.rtype, six.term);
+         (six.rtype, seven.term);
+         (seven.rtype, zero.term);
        ])
 
 let decrement =
   typed_term
     (Abstraction
        [
-         (zero.stype, seven.term);
-         (one.stype, zero.term);
-         (two.stype, one.term);
-         (three.stype, two.term);
-         (four.stype, three.term);
-         (five.stype, four.term);
-         (six.stype, five.term);
-         (seven.stype, six.term);
+         (zero.rtype, seven.term);
+         (one.rtype, zero.term);
+         (two.rtype, one.term);
+         (three.rtype, two.term);
+         (four.rtype, three.term);
+         (five.rtype, four.term);
+         (six.rtype, five.term);
+         (seven.rtype, six.term);
        ])
 
 let fix_binary_num_op = fix three_bit_type unary_num_op
@@ -67,16 +67,16 @@ let add =
             ( binary_num_op,
               Abstraction
                 [
-                  (zero.stype, Abstraction [ (three_bit_type, Variable 0) ]);
+                  (zero.rtype, Abstraction [ (three_bit_type, Variable 0) ]);
                   ( type_union
                       [
-                        one.stype;
-                        two.stype;
-                        three.stype;
-                        four.stype;
-                        five.stype;
-                        six.stype;
-                        seven.stype;
+                        one.rtype;
+                        two.rtype;
+                        three.rtype;
+                        four.rtype;
+                        five.rtype;
+                        six.rtype;
+                        seven.rtype;
                       ],
                     Abstraction
                       [
@@ -96,15 +96,15 @@ let fib =
             ( unary_num_op,
               Abstraction
                 [
-                  (type_union [ zero.stype; one.stype ], one.term);
+                  (type_union [ zero.rtype; one.rtype ], one.term);
                   ( type_union
                       [
-                        two.stype;
-                        three.stype;
-                        four.stype;
-                        five.stype;
-                        six.stype;
-                        seven.stype;
+                        two.rtype;
+                        three.rtype;
+                        four.rtype;
+                        five.rtype;
+                        six.rtype;
+                        seven.rtype;
                       ],
                     binary_apply add.term
                       (Application

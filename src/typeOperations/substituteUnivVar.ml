@@ -20,7 +20,7 @@ end)
 type context_subs = int IntMap.t
 (** Maps a recursive variable number to the base variable number to substitute in that recursive definition *)
 
-type sub_mapping = structured_type IntMap.t
+type sub_mapping = recursive_type IntMap.t
 (** Maps a universal type variable to the corresponding type that will substitute it *)
 
 type substitution_profile = {
@@ -31,8 +31,8 @@ type substitution_profile = {
 }
 
 (** Describes a substitution, which we use to handle the complexity of recursive contexts before performing substitutions *)
-let rec substitute_univ_var_type (with_type : structured_type)
-    (in_type : structured_type) : structured_type =
+let rec substitute_univ_var_type (with_type : recursive_type)
+    (in_type : recursive_type) : recursive_type =
   (* Shift the free universal type variables in the with type by one, since they are about to be substituted into a universal quantification,
      where their binding quantification is further away *)
   let shifted_with_type = shift_univ_var_type with_type 1 in
@@ -49,7 +49,7 @@ let rec substitute_univ_var_type (with_type : structured_type)
     with the with_type, respecting free variables and the complexities of recursive
     types *)
 and substitute_univ_var_type_rec (variable_num : int)
-    (with_type : structured_type) (in_type : structured_type) : structured_type
+    (with_type : recursive_type) (in_type : recursive_type) : recursive_type
     =
   (* Perform initial pass over substitution to get information we use to safely perform substitution *)
   let substitution_profile = get_substitution_profile variable_num in_type in
@@ -75,15 +75,15 @@ and substitute_univ_var_type_rec (variable_num : int)
     substitute_univ_context substitution_profile.context_subs
       unified_sub_mapping unified_in_type.context
   in
-  build_structured_type substituted_union substituted_context
+  build_recursive_type substituted_union substituted_context
 
-and get_substitution_profile (variable_num : int) (in_type : structured_type) :
+and get_substitution_profile (variable_num : int) (in_type : recursive_type) :
     substitution_profile =
   let context_subs = get_context_subs variable_num in_type in
   let all_targets = get_targets variable_num context_subs in_type in
   { targets = all_targets; context_subs }
 
-and get_context_subs (variable_num : int) (in_type : structured_type) =
+and get_context_subs (variable_num : int) (in_type : recursive_type) =
   let initial_subs = get_context_subs_union variable_num in_type.union in
   let final_subs = get_context_subs_context initial_subs in_type.context in
   final_subs
@@ -146,7 +146,7 @@ and get_context_subs_flat_base (variable_num : int) (flat_base : flat_base_type)
       get_context_subs_union (variable_num + 1) inner_type
 
 and get_targets (variable_num : int) (context_sub_directives : context_subs)
-    (in_type : structured_type) =
+    (in_type : recursive_type) =
   let union_targets = get_union_targets variable_num in_type.union in
   let context_targets =
     get_context_targets context_sub_directives in_type.context
@@ -214,7 +214,7 @@ and get_flat_base_targets (variable_num : int) (flat_base : flat_base_type) =
   | FUnivQuantification inner_type ->
       get_union_targets (variable_num + 1) inner_type
 
-and get_initial_sub_mapping (variable_num : int) (with_type : structured_type)
+and get_initial_sub_mapping (variable_num : int) (with_type : recursive_type)
     (targets : IntSet.t) : sub_mapping =
   let bindings =
     List.map
@@ -224,17 +224,17 @@ and get_initial_sub_mapping (variable_num : int) (with_type : structured_type)
   in
   IntMap.of_list bindings
 
-and unify_sub_mapping (in_type : structured_type)
+and unify_sub_mapping (in_type : recursive_type)
     (initial_sub_mapping : sub_mapping) =
   let sub_mapping_with_types =
     extract_second (IntMap.to_list initial_sub_mapping)
   in
   match get_unified_type_context (in_type :: sub_mapping_with_types) with
   | new_in_type_union :: new_sub_mapping_with_union_types, new_context ->
-      let new_in_type = build_structured_type new_in_type_union new_context in
+      let new_in_type = build_recursive_type new_in_type_union new_context in
       let new_sub_mapping_with_types =
         List.map
-          (fun union_type -> build_structured_type union_type new_context)
+          (fun union_type -> build_recursive_type union_type new_context)
           new_sub_mapping_with_union_types
       in
       let new_sub_mapping_bindings =

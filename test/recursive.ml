@@ -15,10 +15,10 @@ open TermOperations.Helpers
 let test (name : string) (result : bool) =
   Printf.printf "%s: %s\n" (if result then "PASS" else "FAIL") name
 
-let is_equivalent_type (t1 : structured_type) (t2 : structured_type) =
+let is_equivalent_type (t1 : recursive_type) (t2 : recursive_type) =
   is_subtype t1 t2 && is_subtype t2 t1
 
-let is_strict_subtype (t1 : structured_type) (t2 : structured_type) =
+let is_strict_subtype (t1 : recursive_type) (t2 : recursive_type) =
   is_subtype t1 t2 && not (is_subtype t2 t1)
 
 let evaluates_to term value = value_to_term (eval term) = value
@@ -124,39 +124,39 @@ let () =
 
 let () =
   test "Zero is a subtype of coinductive integers"
-    (is_subtype zero.stype coi_integer)
+    (is_subtype zero.rtype coi_integer)
 
 let () =
   test "Zero is a subtype of conindutive even integers"
-    (is_subtype zero.stype coi_even_integer)
+    (is_subtype zero.rtype coi_even_integer)
 
 let () =
   test "Zero is a not subtype of coninductive odd integers"
-    (not (is_subtype zero.stype coi_odd_integer))
+    (not (is_subtype zero.rtype coi_odd_integer))
 
 let () =
   test "One is a subtype of coinductive integers"
-    (is_subtype one.stype coi_integer)
+    (is_subtype one.rtype coi_integer)
 
 let () =
   test "One is not a subtype of coinductive even integers"
-    (not (is_subtype one.stype coi_even_integer))
+    (not (is_subtype one.rtype coi_even_integer))
 
 let () =
   test "One is a subtype of coninductive odd integers"
-    (is_subtype one.stype coi_odd_integer)
+    (is_subtype one.rtype coi_odd_integer)
 
 let () =
   test "Negative two is a subtype of coinductive integers"
-    (is_subtype neg_two.stype coi_integer)
+    (is_subtype neg_two.rtype coi_integer)
 
 let () =
   test "Negative two is a subtype of coinductive even integers"
-    (is_subtype neg_two.stype coi_even_integer)
+    (is_subtype neg_two.rtype coi_even_integer)
 
 let () =
   test "Negative two is not a subtype of coninductive odd integers"
-    (not (is_subtype neg_two.stype coi_odd_integer))
+    (not (is_subtype neg_two.rtype coi_odd_integer))
 
 let () =
   test "inductive integers are a strict subtype of coninductive integers"
@@ -183,11 +183,11 @@ let () =
 
 let () =
   test "Increment is a unary number operation"
-    (is_subtype increment.stype unary_numerical_op)
+    (is_subtype increment.rtype unary_numerical_op)
 
 let () =
   test "Decrement is a unary number operation"
-    (is_subtype decrement.stype unary_numerical_op)
+    (is_subtype decrement.rtype unary_numerical_op)
 
 (* TODO: consider checking the more specific types of these functions *)
 
@@ -217,7 +217,7 @@ let () =
 
 let () =
   test "is_even is a number to bool operation"
-    (is_subtype is_even.stype num_to_bool_op)
+    (is_subtype is_even.rtype num_to_bool_op)
 
 let () =
   test "four is even"
@@ -233,7 +233,7 @@ let () =
 
 let () =
   test "is_equal is of type num -> num -> bool"
-    (is_subtype is_equal.stype binary_num_to_bool_op)
+    (is_subtype is_equal.rtype binary_num_to_bool_op)
 
 let () = test "2 equals 2" (numeric_terms_equal 2 2)
 let () = test "-4 equals -4" (numeric_terms_equal (-4) (-4))
@@ -244,7 +244,7 @@ let () = test "2 is not equal to -3" (numeric_terms_not_equal 2 (-3))
 
 let () =
   test "add is a binary numerical operation"
-    (is_subtype add.stype binary_numerical_op)
+    (is_subtype add.rtype binary_numerical_op)
 
 let () = test "3 plus 5 is 8" (assert_adds_to 3 5 8)
 let () = test "-2 plus -4 is -6" (assert_adds_to (-2) (-4) (-6))

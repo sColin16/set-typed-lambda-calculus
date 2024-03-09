@@ -7,7 +7,7 @@ open TermOperations.Helpers
 
 let is_even_label = typed_term (Const "isEven")
 let is_odd_label = typed_term (Const "isOdd")
-let is_even_odd_label = type_union [ is_even_label.stype; is_odd_label.stype ]
+let is_even_odd_label = type_union [ is_even_label.rtype; is_odd_label.rtype ]
 let name = typed_term (Const "Name")
 let num_to_bool = func_type (three_bit_type.union, bool_type.union)
 
@@ -15,16 +15,16 @@ let is_zero =
   typed_term
     (Abstraction
        [
-         (zero.stype, true_lambda.term);
+         (zero.rtype, true_lambda.term);
          ( type_union
              [
-               one.stype;
-               two.stype;
-               three.stype;
-               four.stype;
-               five.stype;
-               six.stype;
-               seven.stype;
+               one.rtype;
+               two.rtype;
+               three.rtype;
+               four.rtype;
+               five.rtype;
+               six.rtype;
+               seven.rtype;
              ],
            false_lambda.term );
        ])
@@ -39,36 +39,36 @@ let is_even_odd =
             ( func_type (is_even_odd_label.union, num_to_bool.union),
               Abstraction
                 [
-                  ( is_even_label.stype,
+                  ( is_even_label.rtype,
                     Abstraction
                       [
-                        (zero.stype, true_lambda.term);
+                        (zero.rtype, true_lambda.term);
                         ( type_union
                             [
-                              one.stype;
-                              two.stype;
-                              three.stype;
-                              four.stype;
-                              five.stype;
-                              six.stype;
-                              seven.stype;
+                              one.rtype;
+                              two.rtype;
+                              three.rtype;
+                              four.rtype;
+                              five.rtype;
+                              six.rtype;
+                              seven.rtype;
                             ],
                           binary_apply (Variable 2) is_odd_label.term
                             (Application (decrement.term, Variable 0)) );
                       ] );
-                  ( is_odd_label.stype,
+                  ( is_odd_label.rtype,
                     Abstraction
                       [
-                        (zero.stype, false_lambda.term);
+                        (zero.rtype, false_lambda.term);
                         ( type_union
                             [
-                              one.stype;
-                              two.stype;
-                              three.stype;
-                              four.stype;
-                              five.stype;
-                              six.stype;
-                              seven.stype;
+                              one.rtype;
+                              two.rtype;
+                              three.rtype;
+                              four.rtype;
+                              five.rtype;
+                              six.rtype;
+                              seven.rtype;
                             ],
                           binary_apply (Variable 2) is_even_label.term
                             (Application (decrement.term, Variable 0)) );

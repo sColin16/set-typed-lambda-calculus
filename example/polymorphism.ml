@@ -46,52 +46,52 @@ let polymorphic_quadruple =
                 func_type ([ UnivTypeVar 0 ], [ UnivTypeVar 0 ]) ),
             polymorphic_double_poly )))
 
-let empty_list = typed_term (Abstraction [ (name_label.stype, nil_label.term) ])
+let empty_list = typed_term (Abstraction [ (name_label.rtype, nil_label.term) ])
 
-type list_type_pair = { full : structured_type; non_empty : structured_type }
+type list_type_pair = { full : recursive_type; non_empty : recursive_type }
 
 (** Constructs a list type for a list that holds the given type *)
-let build_list_type (kind : recursive_kind) (elt_type : structured_type) =
+let build_list_type (kind : recursive_kind) (elt_type : recursive_type) =
   (* We are going to add a new recursive definition to the context, whose number is the length of the current context *)
   (* The alternative is getting the elt_type in a new context, but the elt_type is part of that context, so we need to
      add this recursive definition to the context instead *)
   let new_rec_num = List.length elt_type.context in
   let flat_empty_type =
-    flatten_union empty_list.stype.union empty_list.stype.context
+    flatten_union empty_list.rtype.union empty_list.rtype.context
   in
   (* A node of a list contains the value and the rest of the list *)
   let flat_non_empty_type =
     FIntersection
       [
-        (name_label.stype.union, cons_label.stype.union);
-        (val_label.stype.union, elt_type.union);
-        (next_label.stype.union, [ RecTypeVar new_rec_num ]);
+        (name_label.rtype.union, cons_label.rtype.union);
+        (val_label.rtype.union, elt_type.union);
+        (next_label.rtype.union, [ RecTypeVar new_rec_num ]);
       ]
   in
   let flat_list_type = flat_non_empty_type :: flat_empty_type in
   let list_recursive_def = build_recursive_def kind flat_list_type in
   (* Add the new recursive definition to the end of the context so it has the number assigned originally *)
   let new_context = elt_type.context @ [ list_recursive_def ] in
-  build_structured_type [ RecTypeVar new_rec_num ] new_context
+  build_recursive_type [ RecTypeVar new_rec_num ] new_context
 
 (** Constructs a non-empty list type type for a list that holds the given type *)
 let build_non_empty_list_type (kind : recursive_kind)
-    (elt_type : structured_type) =
+    (elt_type : recursive_type) =
   let list_type = build_list_type kind elt_type in
   (* Just assert that at least one node exists containing a value and pointing to a possible empty list *)
   (* TODO: avoid duplication with Flat and non-flat intersection *)
-  build_structured_type
+  build_recursive_type
     [
       Intersection
         [
-          (name_label.stype.union, cons_label.stype.union);
-          (val_label.stype.union, elt_type.union);
-          (next_label.stype.union, list_type.union);
+          (name_label.rtype.union, cons_label.rtype.union);
+          (val_label.rtype.union, elt_type.union);
+          (next_label.rtype.union, list_type.union);
         ];
     ]
     list_type.context
 
-let build_list_type_pair (kind : recursive_kind) (elt_type : structured_type) =
+let build_list_type_pair (kind : recursive_kind) (elt_type : recursive_type) =
   let list_type = build_list_type kind elt_type in
   let non_empty_list_type = build_non_empty_list_type kind elt_type in
   { full = list_type; non_empty = non_empty_list_type }
@@ -107,9 +107,9 @@ and build_list_term_rec (term_list : term list) =
       let rest_list = build_list_term_rec rest in
       Abstraction
         [
-          (name_label.stype, cons_label.term);
-          (val_label.stype, term);
-          (next_label.stype, rest_list);
+          (name_label.rtype, cons_label.term);
+          (val_label.rtype, term);
+          (next_label.rtype, rest_list);
         ]
 
 let build_bool_list_term (bools : bool list) =
@@ -147,7 +147,7 @@ let (list_with_num_union, num_with_list_union), list_num_context =
   get_unified_type_context_pair polymoprhic_list_type.full ind_integer
 
 let list_to_num_op =
-  build_structured_type
+  build_recursive_type
     [ Intersection [ (list_with_num_union, num_with_list_union) ] ]
     list_num_context
 
@@ -156,21 +156,21 @@ let (list_with_idx_union, idx_with_list_union), list_idx_context =
 
 (* Represents `Nat -> X | None`, the "return value" of the list_idx_op function *)
 let idx_to_elt_op =
-  build_structured_type
+  build_recursive_type
     [
       Intersection
-        [ (idx_with_list_union, UnivTypeVar 0 :: none_label.stype.union) ];
+        [ (idx_with_list_union, UnivTypeVar 0 :: none_label.rtype.union) ];
     ]
     list_idx_context
 
 (* Represents `List X -> Nat -> X | None`, when embedded in some universal quantifier with binding variable X *)
 let list_idx_op =
-  build_structured_type
+  build_recursive_type
     [ Intersection [ (list_with_idx_union, idx_to_elt_op.union) ] ]
     list_idx_context
 
 let unary_list_op =
-  build_structured_type
+  build_recursive_type
     [
       Intersection
         [ (polymoprhic_list_type.full.union, polymoprhic_list_type.full.union) ];
@@ -178,7 +178,7 @@ let unary_list_op =
     polymoprhic_list_type.full.context
 
 let binary_list_op =
-  build_structured_type
+  build_recursive_type
     [ Intersection [ (polymoprhic_list_type.full.union, unary_list_op.union) ] ]
     polymoprhic_list_type.full.context
 
@@ -187,7 +187,7 @@ let poly_to_bool_op = func_type ([ UnivTypeVar 0 ], bool_type.union)
 
 (* Represents `(X -> Bool) -> List X` *)
 let cond_to_list_op =
-  build_structured_type
+  build_recursive_type
     [
       Intersection [ (poly_to_bool_op.union, polymoprhic_list_type.full.union) ];
     ]
@@ -195,7 +195,7 @@ let cond_to_list_op =
 
 (* Represents `List X -> (X -> Bool) -> List X`, the signature for the polymoprhic list function *)
 let filter_op =
-  build_structured_type
+  build_recursive_type
     [
       Intersection [ (polymoprhic_list_type.full.union, cond_to_list_op.union) ];
     ]
@@ -272,7 +272,7 @@ let poly_bool_op = func_type ([ UnivTypeVar 0 ], bool_type.union)
 let list_extract_op =
   map_type
     (fun list ->
-      [ Intersection [ (list, UnivTypeVar 0 :: none_label.stype.union) ] ])
+      [ Intersection [ (list, UnivTypeVar 0 :: none_label.rtype.union) ] ])
     polymoprhic_list_type.full
 
 (* Represents `(X -> Bool) -> X List -> X | None`, the type of the find function *)
@@ -294,9 +294,9 @@ let cons =
                   ( polymoprhic_list_type.full,
                     Abstraction
                       [
-                        (name_label.stype, cons_label.term);
-                        (val_label.stype, Variable 2);
-                        (next_label.stype, Variable 1);
+                        (name_label.rtype, cons_label.term);
+                        (val_label.rtype, Variable 2);
+                        (next_label.rtype, Variable 1);
                       ] );
                 ] );
           ]))
@@ -310,7 +310,7 @@ let is_empty =
        (Abstraction
           [
             (polymoprhic_list_type.non_empty, false_lambda.term);
-            (empty_list.stype, true_lambda.term);
+            (empty_list.rtype, true_lambda.term);
           ]))
 
 (* Polymorphic function to get the first element of a list, or None if the list is empty *)
@@ -321,7 +321,7 @@ let head =
           [
             ( polymoprhic_list_type.non_empty,
               Application (Variable 0, val_label.term) );
-            (empty_list.stype, none_label.term);
+            (empty_list.rtype, none_label.term);
           ]))
 
 let head_poly =
@@ -338,7 +338,7 @@ let tail =
           [
             ( polymoprhic_list_type.non_empty,
               Application (Variable 0, next_label.term) );
-            (empty_list.stype, none_label.term);
+            (empty_list.rtype, none_label.term);
           ]))
 
 let tail_poly =
@@ -373,7 +373,7 @@ let length =
                            Application
                              ( Variable 1,
                                Application (tail_poly.term, Variable 0) ) ) );
-                     (empty_list.stype, zero.term);
+                     (empty_list.rtype, zero.term);
                    ] );
              ])))
 
@@ -390,13 +390,13 @@ let nth =
                      ( polymoprhic_list_type.non_empty,
                        Abstraction
                          [
-                           (zero.stype, Application (head_poly.term, Variable 1));
+                           (zero.rtype, Application (head_poly.term, Variable 1));
                            ( ind_positive_number,
                              binary_apply (Variable 2)
                                (Application (tail_poly.term, Variable 1))
                                (Application (decrement.term, Variable 0)) );
                          ] );
-                     ( empty_list.stype,
+                     ( empty_list.rtype,
                        Abstraction [ (ind_natural_number, none_label.term) ] );
                    ] );
              ])))
@@ -420,7 +420,7 @@ let concat =
                                   (Application (tail_poly.term, Variable 1))
                                   (Variable 0)) );
                          ] );
-                     ( empty_list.stype,
+                     ( empty_list.rtype,
                        Abstraction [ (polymoprhic_list_type.full, Variable 0) ]
                      );
                    ] );
@@ -459,7 +459,7 @@ let reverse =
                             ( Variable 1,
                               Application (tail_poly.term, Variable 0) ))
                          (Application (head_poly.term, Variable 0)) );
-                     (empty_list.stype, empty_list.term);
+                     (empty_list.rtype, empty_list.term);
                    ] );
              ])))
 
@@ -479,7 +479,7 @@ let filter =
                              Application
                                ( Abstraction
                                    [
-                                     ( true_lambda.stype,
+                                     ( true_lambda.rtype,
                                        binary_apply cons_poly
                                          (Application
                                             (head_poly.term, Variable 2))
@@ -487,7 +487,7 @@ let filter =
                                             (Application
                                                (tail_poly.term, Variable 2))
                                             (Variable 1)) );
-                                     ( false_lambda.stype,
+                                     ( false_lambda.rtype,
                                        binary_apply (Variable 3)
                                          (Application
                                             (tail_poly.term, Variable 2))
@@ -498,7 +498,7 @@ let filter =
                                      Application (head_poly.term, Variable 1) )
                                ) );
                          ] );
-                     ( empty_list.stype,
+                     ( empty_list.rtype,
                        Abstraction [ (poly_to_bool_op, empty_list.term) ] );
                    ] );
              ])))
@@ -525,7 +525,7 @@ let map =
                                   (binary_apply (Variable 2) (Variable 1)
                                      (Application (tail_poly_nested1, Variable 0)))
                               );
-                              (empty_list.stype, empty_list.term);
+                              (empty_list.rtype, empty_list.term);
                             ] );
                       ] );
                 ]))))
@@ -554,7 +554,7 @@ let fold_left =
                                                 Variable 0 )))
                                         (Application
                                            (tail_poly_nested1, Variable 0)) );
-                                    (empty_list.stype, Variable 1);
+                                    (empty_list.rtype, Variable 1);
                                   ] );
                             ] );
                       ] );
@@ -625,17 +625,17 @@ let equal =
                      ( binary_poly_bool_op,
                        Abstraction
                          [
-                           ( empty_list.stype,
+                           ( empty_list.rtype,
                              Abstraction
                                [
-                                 (empty_list.stype, true_lambda.term);
+                                 (empty_list.rtype, true_lambda.term);
                                  ( polymoprhic_list_type.non_empty,
                                    false_lambda.term );
                                ] );
                            ( polymoprhic_list_type.non_empty,
                              Abstraction
                                [
-                                 (empty_list.stype, false_lambda.term);
+                                 (empty_list.rtype, false_lambda.term);
                                  ( polymoprhic_list_type.non_empty,
                                    binary_apply and_lambda.term
                                      (binary_apply (Variable 2)
@@ -662,15 +662,15 @@ let find =
                      ( poly_bool_op,
                        Abstraction
                          [
-                           (empty_list.stype, none_label.term);
+                           (empty_list.rtype, none_label.term);
                            ( polymoprhic_list_type.non_empty,
                              Application
                                ( Abstraction
                                    [
-                                     ( true_lambda.stype,
+                                     ( true_lambda.rtype,
                                        Application (head_poly.term, Variable 1)
                                      );
-                                     ( false_lambda.stype,
+                                     ( false_lambda.rtype,
                                        binary_apply (Variable 3) (Variable 2)
                                          (Application
                                             (tail_poly.term, Variable 1)) );

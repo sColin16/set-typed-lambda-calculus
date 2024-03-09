@@ -97,8 +97,8 @@ let expected_is_empty_type =
           [
             Intersection
               [
-                (non_empty, false_lambda.stype.union);
-                (empty_list.stype.union, true_lambda.stype.union);
+                (non_empty, false_lambda.rtype.union);
+                (empty_list.rtype.union, true_lambda.rtype.union);
               ];
           ];
       ])
@@ -121,7 +121,7 @@ let expected_head_type =
             Intersection
               [
                 (non_empty, [ UnivTypeVar 0 ]);
-                (empty_list.stype.union, none_label.stype.union);
+                (empty_list.rtype.union, none_label.rtype.union);
               ];
           ];
       ])
@@ -133,7 +133,7 @@ let expected_head_supertype =
     (fun list ->
       [
         UnivQuantification
-          [ Intersection [ (list, UnivTypeVar 0 :: none_label.stype.union) ] ];
+          [ Intersection [ (list, UnivTypeVar 0 :: none_label.rtype.union) ] ];
       ])
     polymoprhic_list_type.full
 
@@ -147,7 +147,7 @@ let expected_tail_type =
             Intersection
               [
                 (non_empty, list);
-                (empty_list.stype.union, none_label.stype.union);
+                (empty_list.rtype.union, none_label.rtype.union);
               ];
           ];
       ])
@@ -159,7 +159,7 @@ let expected_tail_supertype =
     (fun list ->
       [
         UnivQuantification
-          [ Intersection [ (list, none_label.stype.union @ list) ] ];
+          [ Intersection [ (list, none_label.rtype.union @ list) ] ];
       ])
     polymoprhic_list_type.full
 
@@ -248,27 +248,27 @@ let list_predicate_type =
 
 let () =
   test "Polymoprhic identity function type"
-    (is_equivalent_type polymoprhic_identity.stype expected_poly_identity_type)
+    (is_equivalent_type polymoprhic_identity.rtype expected_poly_identity_type)
 
 let () =
   test "Polymoprhic identity function applied type"
-    (is_equivalent_type identity_int.stype expected_applied_poly_type)
+    (is_equivalent_type identity_int.rtype expected_applied_poly_type)
 
 let () =
   test "Polymoprhic double function type"
-    (is_equivalent_type polymorphic_double.stype expected_poly_map_type)
+    (is_equivalent_type polymorphic_double.rtype expected_poly_map_type)
 
 let () =
   test "Polymoprhic double function applied type"
-    (is_equivalent_type double_int.stype expected_poly_map_applied_type)
+    (is_equivalent_type double_int.rtype expected_poly_map_applied_type)
 
 let () =
   test "Polymorphic quadruple function type"
-    (is_equivalent_type polymorphic_quadruple.stype expected_poly_map_type)
+    (is_equivalent_type polymorphic_quadruple.rtype expected_poly_map_type)
 
 let () =
   test "Polymoprhic quadruple function applied type"
-    (is_equivalent_type quadruple_int.stype expected_poly_map_applied_type)
+    (is_equivalent_type quadruple_int.rtype expected_poly_map_applied_type)
 
 let () =
   test "Simple polymoprhic evaluation"
@@ -304,15 +304,15 @@ let () =
 
 let () =
   test "empty list is a subtype of boolean list"
-    (is_subtype empty_list.stype boolean_list_type.full)
+    (is_subtype empty_list.rtype boolean_list_type.full)
 
 let () =
   test "empty list is not a subtype of non empty boolean list"
-    (not (is_subtype empty_list.stype boolean_list_type.non_empty))
+    (not (is_subtype empty_list.rtype boolean_list_type.non_empty))
 
 let () =
   test "empty list and boolean non-empty list do not have an intersection"
-    (not (has_intersection empty_list.stype boolean_list_type.non_empty))
+    (not (has_intersection empty_list.rtype boolean_list_type.non_empty))
 
 let () =
   test "Polymoprhic non-empty list is a subtype of polymoprhic list"
@@ -320,19 +320,19 @@ let () =
 
 let () =
   test "Polymoprhic cons is a subtype of more general type"
-    (is_strict_subtype cons.stype expected_cons_supertype)
+    (is_strict_subtype cons.rtype expected_cons_supertype)
 
 let () =
   test "Polymoprhic cons has expected specific type"
-    (is_equivalent_type cons.stype expected_cons_type)
+    (is_equivalent_type cons.rtype expected_cons_type)
 
 let () =
   test "Polymoprhic is_empty has expected specific type"
-    (is_equivalent_type is_empty.stype expected_is_empty_type)
+    (is_equivalent_type is_empty.rtype expected_is_empty_type)
 
 let () =
   test "Polymoprhic is_empty is a subtype of more general type"
-    (is_strict_subtype is_empty.stype expected_is_empty_supertype)
+    (is_strict_subtype is_empty.rtype expected_is_empty_supertype)
 
 let () =
   test "Polymoprhic is_empty detects empty list correctly"
@@ -348,19 +348,19 @@ let () =
 
 let () =
   test "Polymoprhic head has expected specific type"
-    (is_equivalent_type head.stype expected_head_type)
+    (is_equivalent_type head.rtype expected_head_type)
 
 let () =
   test "Polymorphic head has expected more general type"
-    (is_strict_subtype head.stype expected_head_supertype)
+    (is_strict_subtype head.rtype expected_head_supertype)
 
 let () =
   test "Polymoprhic tail has expected specific type"
-    (is_equivalent_type tail.stype expected_tail_type)
+    (is_equivalent_type tail.rtype expected_tail_type)
 
 let () =
   test "Polymorphic tail has expected more general type"
-    (is_strict_subtype tail.stype expected_tail_supertype)
+    (is_strict_subtype tail.rtype expected_tail_supertype)
 
 let apply_head_non_empty =
   typed_term (Application (head_bool.term, simple_boolean_list.term))
@@ -374,7 +374,7 @@ let () =
 
 let () =
   test "Polymoprhic head on non-empty list types correctly"
-    (is_equivalent_type apply_head_non_empty.stype bool_type)
+    (is_equivalent_type apply_head_non_empty.rtype bool_type)
 
 let () =
   test "Polymorphic head returns None for empty list"
@@ -382,7 +382,7 @@ let () =
 
 let () =
   test "Polymorphic head types correctly applied on empty list"
-    (is_equivalent_type apply_head_empty.stype none_label.stype)
+    (is_equivalent_type apply_head_empty.rtype none_label.rtype)
 
 let () =
   test "Polymorphic tail gets rest of list for non-empty list"
@@ -398,7 +398,7 @@ let () =
 
 let () =
   test "Length is a list to num operation"
-    (is_subtype length.stype (map_type univ_quantify_union list_to_num_op))
+    (is_subtype length.rtype (map_type univ_quantify_union list_to_num_op))
 
 let () =
   test "Empty integer list has length 0"
@@ -422,7 +422,7 @@ let () =
 
 let () =
   test "nth is a list index operation"
-    (is_subtype nth.stype (map_type univ_quantify_union list_idx_op))
+    (is_subtype nth.rtype (map_type univ_quantify_union list_idx_op))
 
 let () =
   test "first in empty list is none"
@@ -456,7 +456,7 @@ let () =
 
 let () =
   test "Concat is a binary list operation"
-    (is_subtype concat.stype (map_type univ_quantify_union binary_list_op))
+    (is_subtype concat.rtype (map_type univ_quantify_union binary_list_op))
 
 let () =
   test "Concat two empty lists is empty list"
@@ -484,7 +484,7 @@ let () =
        integer_list_combined.term)
 
 let () =
-  test "Append has expected type" (is_subtype append.stype expected_append_type)
+  test "Append has expected type" (is_subtype append.rtype expected_append_type)
 
 let () =
   test "Append to empty list is list with just that element"
@@ -500,7 +500,7 @@ let () =
 
 let () =
   test "Reverse is a unary list type"
-    (is_subtype reverse.stype (map_type univ_quantify_union unary_list_op))
+    (is_subtype reverse.rtype (map_type univ_quantify_union unary_list_op))
 
 let () =
   test "Reverse of empty list is empty list"
@@ -516,7 +516,7 @@ let () =
 
 let () =
   test "Filter has the appropriate type"
-    (is_subtype filter.stype (map_type univ_quantify_union filter_op))
+    (is_subtype filter.rtype (map_type univ_quantify_union filter_op))
 
 let () =
   test "Filter boolean list with identity"
@@ -559,7 +559,7 @@ let () =
 
 let () =
   test "Map has the appropriate type"
-    (is_subtype map.stype (map_type univ_quantify_union_double map_op))
+    (is_subtype map.rtype (map_type univ_quantify_union_double map_op))
 
 let () =
   test "Map empty list is an empty list"
@@ -588,7 +588,7 @@ let () =
 
 let () =
   test "Fold left has appropriate type"
-    (is_subtype fold_left.stype (map_type univ_quantify_union_double fold_op))
+    (is_subtype fold_left.rtype (map_type univ_quantify_union_double fold_op))
 
 let () =
   test "Fold left uses accumulator for empty list"
@@ -605,7 +605,7 @@ let () =
 
 let () =
   test "Every function has the right type"
-    (is_subtype every.stype list_predicate_type)
+    (is_subtype every.rtype list_predicate_type)
 
 let () =
   test "Every function called on empty list returns true"
@@ -633,7 +633,7 @@ let () =
 
 let () =
   test "Exists function has the right type"
-    (is_subtype exists.stype list_predicate_type)
+    (is_subtype exists.rtype list_predicate_type)
 
 let () =
   test "Exists function called on empty list returns false"
@@ -661,7 +661,7 @@ let () =
 
 let () =
   test "Equal has the right type"
-    (is_subtype equal.stype (map_type univ_quantify_union binary_bool_list_op))
+    (is_subtype equal.rtype (map_type univ_quantify_union binary_bool_list_op))
 
 let () =
   test "Empty lists are equal"
@@ -707,7 +707,7 @@ let () =
 
 let () =
   test "Find has the right type"
-    (is_subtype find.stype (map_type univ_quantify_union find_op))
+    (is_subtype find.rtype (map_type univ_quantify_union find_op))
 
 let () =
   test "Find in empty list returns None"
@@ -734,7 +734,7 @@ let () =
        (num_term 1))
 
 let () =
-  test "Flatten has right type" (is_subtype flatten.stype expected_flatten_type)
+  test "Flatten has right type" (is_subtype flatten.rtype expected_flatten_type)
 
 let () =
   test "Flatten empty list is empty list"

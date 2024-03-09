@@ -2,9 +2,9 @@ open Metatypes
 open Helpers
 open WellFounded
 
-(** Constructs a structured type from its constituent union type and recursive context *)
-let build_structured_type (union : union_type) (context : recursive_context) :
-    structured_type =
+(** Constructs a recursive type from its constituent union type and recursive context *)
+let build_recursive_type (union : union_type) (context : recursive_context) :
+    recursive_type =
   { union; context }
 
 (** Constructs a single entry in a recursive context *)
@@ -24,20 +24,20 @@ let build_recursive_context (defs : (recursive_kind * flat_union_type) list) :
   else raise (Invalid_argument "Context was not properly well-founded")
 
 let expand_type_var (var_num : int) (context : recursive_context) =
-  build_structured_type (expand_type_var_to_union var_num context) context
+  build_recursive_type (expand_type_var_to_union var_num context) context
 
 let to_contractive_type (union : union_type) (context : recursive_context) =
-  build_structured_type (to_contractive_union union context) context
+  build_recursive_type (to_contractive_union union context) context
 
-(** Constructs a structured type from a union_type *)
-let union_type (union_type : union_type) = build_structured_type union_type []
+(** Constructs a recursive type from a union_type *)
+let union_type (union_type : union_type) = build_recursive_type union_type []
 
-(** Constructs a structured type from a base_type *)
+(** Constructs a recursive type from a base_type *)
 let base_type (base_type : base_type) = union_type [ base_type ]
 
-(** Constructs a structured type from an argument and return type *)
+(** Constructs a recursive type from an argument and return type *)
 let func_type (unary_function : unary_function) =
   base_type (Intersection [ unary_function ])
 
-(** Constructs a structured type from a label string *)
+(** Constructs a recursive type from a label string *)
 let label_type (label : string) = base_type (Label label)

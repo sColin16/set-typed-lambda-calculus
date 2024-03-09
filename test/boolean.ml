@@ -5,17 +5,17 @@ open TermOperations.Helpers
 
 let () =
   test "identity is unary bool op"
-    (is_subtype identity_lambda.stype unary_bool_op)
+    (is_subtype identity_lambda.rtype unary_bool_op)
 
-let () = test "not is unary bool op" (is_subtype not_lambda.stype unary_bool_op)
-
-let () =
-  test "and is binary bool op" (is_subtype and_lambda.stype binary_bool_op)
-
-let () = test "or is binary bool op" (is_subtype or_lambda.stype binary_bool_op)
+let () = test "not is unary bool op" (is_subtype not_lambda.rtype unary_bool_op)
 
 let () =
-  test "if is ternary bool op" (is_subtype if_lambda.stype ternary_bool_op)
+  test "and is binary bool op" (is_subtype and_lambda.rtype binary_bool_op)
+
+let () = test "or is binary bool op" (is_subtype or_lambda.rtype binary_bool_op)
+
+let () =
+  test "if is ternary bool op" (is_subtype if_lambda.rtype ternary_bool_op)
 
 let () =
   test "not true"

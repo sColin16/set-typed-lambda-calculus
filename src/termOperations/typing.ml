@@ -9,13 +9,13 @@ open TypeOperations.Context
 open TypeOperations.Union
 open TypeOperations.SubstituteUnivVar
 
-type var_type_env = structured_type list
+type var_type_env = recursive_type list
 
 (** [type_lambda_term term] determines the type of a term, if it is well-typed *)
 let rec get_type (term : term) = get_type_rec term []
 
 and get_type_rec (term : term) (var_type_env : var_type_env) :
-    structured_type option =
+    recursive_type option =
   match term with
   (* Constants always have label types *)
   | Const name -> Some (label_type name)
@@ -57,7 +57,7 @@ and get_type_rec (term : term) (var_type_env : var_type_env) :
       let inner_type_opt = get_type_rec inner_term var_type_env in
       Option.map
         (fun inner_type ->
-          build_structured_type
+          build_recursive_type
             [ UnivQuantification inner_type.union ]
             inner_type.context)
         inner_type_opt
@@ -72,8 +72,8 @@ and get_type_rec (term : term) (var_type_env : var_type_env) :
 (** [get_application_type func_type arg_type] determines the resulting type of
     applying a term of type [arg_type] to a term of type [func_type], if
     the function can be applied to the argument *)
-and get_application_type (func : structured_type) (arg : structured_type) :
-    structured_type option =
+and get_application_type (func : recursive_type) (arg : recursive_type) :
+    recursive_type option =
   (* Flatten the func type so only labels and intersection types remain *)
   let func_flat = flatten_union func.union func.context in
   (* The argument should be applicable to any function in the union, so acquire the type of applying the arg to each option *)
@@ -89,12 +89,12 @@ and get_application_type (func : structured_type) (arg : structured_type) :
   (* Join all of the return types into a single union type, add the context *)
   Option.map
     (fun return_types_concrete ->
-      build_structured_type (List.flatten return_types_concrete) func.context)
+      build_recursive_type (List.flatten return_types_concrete) func.context)
     return_types
 
 and get_application_option_type
     ((func_option, context1) : flat_base_type * recursive_context)
-    (arg : structured_type) : union_type option =
+    (arg : recursive_type) : union_type option =
   match func_option with
   (* Label types, universal quantifications, and their variables cannot be applied *)
   | FLabel _ | FUnivTypeVar _ | FUnivQuantification _ -> None
@@ -103,20 +103,20 @@ and get_application_option_type
   | FIntersection functions ->
       let func_params = extract_composite_args functions in
       let exhaustive_arg_coverage =
-        is_subtype arg (build_structured_type func_params context1)
+        is_subtype arg (build_recursive_type func_params context1)
       in
       if not exhaustive_arg_coverage then None
       else
         Some
           (List.fold_left
              (fun acc (func_arg, func_return) ->
-               if has_intersection arg (build_structured_type func_arg context1)
+               if has_intersection arg (build_recursive_type func_arg context1)
                then acc @ func_return
                else acc)
              [] functions)
 
-and get_univ_application_type (quantifier : structured_type)
-    (type_arg : structured_type) : structured_type option =
+and get_univ_application_type (quantifier : recursive_type)
+    (type_arg : recursive_type) : recursive_type option =
   (* Flatten the func type to get rid of recursive types *)
   let quantifier_flat = flatten_union quantifier.union quantifier.context in
   (* The type argument is applicable to any universal quantification in the union, so determine the types resulting
@@ -131,12 +131,12 @@ and get_univ_application_type (quantifier : structured_type)
   in
   (* Aggregate the return types - if any of them were none, the application is not well-typed *)
   let return_types_opt = opt_list_to_list_opt return_opt_types in
-  (* Combine all of the structured types, merging both the unions and and contexts *)
+  (* Combine all of the recursive types, merging both the unions and and contexts *)
   Option.map (fun return_types -> type_union return_types) return_types_opt
 
 and get_univ_application_option_type
     ((func_option, context1) : flat_base_type * recursive_context)
-    (type_arg : structured_type) : structured_type option =
+    (type_arg : recursive_type) : recursive_type option =
   match func_option with
   (* Only universal quantification can have type applications
      Universal type variables may be instantiated with quantification (assuming impredicativity)
@@ -146,5 +146,5 @@ and get_univ_application_option_type
   (* But for now, we just substitution in the inner type. The function handles shifting for us *)
   | FUnivQuantification inner_union_type ->
       (* Construct the complete inner type using the context *)
-      let inner_type = build_structured_type inner_union_type context1 in
+      let inner_type = build_recursive_type inner_union_type context1 in
       Some (substitute_univ_var_type type_arg inner_type)

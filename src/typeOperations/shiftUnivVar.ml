@@ -4,20 +4,20 @@ open Create
 open Common.Helpers
 
 (** Shifts free universal type variables in a type by the shift amount *)
-let rec shift_univ_var_type (stype : structured_type) (shift_amount : int) =
-  shift_univ_var_type_rec shift_amount 0 stype
+let rec shift_univ_var_type (rtype : recursive_type) (shift_amount : int) =
+  shift_univ_var_type_rec shift_amount 0 rtype
 
 and shift_univ_var_type_rec (shift_amount : int) (cutoff : int)
-    (stype : structured_type) =
+    (rtype : recursive_type) =
   (* Shift the universal type variables in the union type *)
-  let shifted_union = shift_univ_var_union shift_amount cutoff stype.union in
+  let shifted_union = shift_univ_var_union shift_amount cutoff rtype.union in
   (* Determine the shifts that need to be made to the recursive context *)
   let context_shifts =
-    get_context_shifts { shift_amount; cutoff } stype.union stype.context
+    get_context_shifts { shift_amount; cutoff } rtype.union rtype.context
   in
   (* Shift the context accordingly *)
-  let shifted_context = shift_univ_var_context stype.context context_shifts in
-  let shifted_type = build_structured_type shifted_union shifted_context in
+  let shifted_context = shift_univ_var_context rtype.context context_shifts in
+  let shifted_type = build_recursive_type shifted_union shifted_context in
   shifted_type
 
 and shift_univ_var_context (context : recursive_context)

@@ -1,7 +1,7 @@
 open Metatypes
 open TermTypes
 
-let rec type_to_string (t : structured_type) =
+let rec type_to_string (t : recursive_type) =
   Printf.sprintf "%s with %s"
     (union_type_to_string t.union)
     (recursive_context_to_string t.context)

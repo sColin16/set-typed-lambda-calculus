@@ -5,7 +5,7 @@ open Create
 (* Would it be useful to have a pairwise union that the list version uses? *)
 
 (** Constructs a new type that is the union of the given list of types *)
-let type_union (types : structured_type list) : structured_type =
+let type_union (types : recursive_type list) : recursive_type =
   let union_type, recursive_context =
     (* Join each union and context pairwise via fold *)
     List.fold_left
@@ -19,4 +19,4 @@ let type_union (types : structured_type list) : structured_type =
       ([], []) types
   in
   (* Finally, construct the type from the accumulated union and context *)
-  build_structured_type union_type recursive_context
+  build_recursive_type union_type recursive_context

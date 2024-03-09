@@ -18,7 +18,7 @@ let rec value_to_term (value : value) : term =
       Abstraction converted_branches
 
 and substitute_abstraction_branch (env : environment) (depth : int)
-    ((arg_type, body) : structured_type * term) =
+    ((arg_type, body) : recursive_type * term) =
   (* Perform the substitution on the branch of abstraction, but leave the type the same *)
   let substituted_body = substitute_in_term body env depth in
   (arg_type, substituted_body)

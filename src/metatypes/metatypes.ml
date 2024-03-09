@@ -1,7 +1,7 @@
 type 'a union = 'a list
 type 'a intersection = 'a list
 
-type structured_type = { union : union_type; context : recursive_context }
+type recursive_type = { union : union_type; context : recursive_context }
 and union_type = base_type list
 
 and base_type =

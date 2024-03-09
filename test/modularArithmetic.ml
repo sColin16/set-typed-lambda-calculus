@@ -5,16 +5,16 @@ open TermOperations.Helpers
 
 let () =
   test "increment is a unary num operator"
-    (is_subtype increment.stype unary_num_op)
+    (is_subtype increment.rtype unary_num_op)
 
 let () =
   test "decrement is a unary num operator"
-    (is_subtype decrement.stype unary_num_op)
+    (is_subtype decrement.rtype unary_num_op)
 
 let () =
-  test "add is a binary num operator" (is_subtype add.stype binary_num_op)
+  test "add is a binary num operator" (is_subtype add.rtype binary_num_op)
 
-let () = test "fib is a unary num operator" (is_subtype fib.stype unary_num_op)
+let () = test "fib is a unary num operator" (is_subtype fib.rtype unary_num_op)
 
 let () =
   test "increment zero"

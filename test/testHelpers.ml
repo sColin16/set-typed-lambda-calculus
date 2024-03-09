@@ -8,8 +8,8 @@ let test (name : string) (result : bool) =
 
 let evaluates_to term value = value_to_term (eval term) = value
 
-let is_equivalent_type (t1 : structured_type) (t2 : structured_type) =
+let is_equivalent_type (t1 : recursive_type) (t2 : recursive_type) =
   is_subtype t1 t2 && is_subtype t2 t1
 
-let is_strict_subtype (t1 : structured_type) (t2 : structured_type) =
+let is_strict_subtype (t1 : recursive_type) (t2 : recursive_type) =
   is_subtype t1 t2 && not (is_subtype t2 t1)

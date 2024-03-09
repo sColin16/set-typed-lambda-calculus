@@ -9,9 +9,9 @@ module TypeVarSet = Set.Make (struct
 end)
 
 (** [is_unary union_type] determines if a type cannot be written as the union of two distinct, unrelated types *)
-let rec is_unary (t : structured_type) = is_unary_rec t TypeVarSet.empty
+let rec is_unary (t : recursive_type) = is_unary_rec t TypeVarSet.empty
 
-and is_unary_rec (t : structured_type) (encountered_type_vars : TypeVarSet.t) =
+and is_unary_rec (t : recursive_type) (encountered_type_vars : TypeVarSet.t) =
   let type_var_num =
     if List.length t.union = 1 then
       match List.hd t.union with RecTypeVar n -> Some n | _ -> None
@@ -45,10 +45,10 @@ and is_unary_rec (t : structured_type) (encountered_type_vars : TypeVarSet.t) =
             List.for_all
               (fun (arg, return) ->
                 is_unary_rec
-                  (build_structured_type arg t.context)
+                  (build_recursive_type arg t.context)
                   new_encountered_vars
                 && is_unary_rec
-                     (build_structured_type return t.context)
+                     (build_recursive_type return t.context)
                      new_encountered_vars)
               functions
         (* Universally quantified variables can't be unary, even with bounding, because you can always intersect
@@ -58,7 +58,7 @@ and is_unary_rec (t : structured_type) (encountered_type_vars : TypeVarSet.t) =
            you can't reference the variable inside of the quantification, so unclear how useful this is *)
         | FUnivQuantification univ_union ->
             is_unary_rec
-              (build_structured_type univ_union t.context)
+              (build_recursive_type univ_union t.context)
               encountered_type_vars)
     (* A multiple type union is not considered unary. In theory it may be possible to rewrite as a single base type
        but we can do that later *)

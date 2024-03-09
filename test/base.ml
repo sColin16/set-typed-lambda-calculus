@@ -28,7 +28,7 @@ let zero_label = label_type "Zero"
 let succ_label = label_type "Succ"
 let zero_type = func_type (name_label.union, zero_label.union)
 
-let increment_type (num : structured_type) =
+let increment_type (num : recursive_type) =
   base_type
     (Intersection
        [ (name_label.union, succ_label.union); (val_label.union, num.union) ])

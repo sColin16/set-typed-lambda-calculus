@@ -10,10 +10,10 @@ end)
 
 (** [has_intersection type1 type2] determines if the intersection of the two types is inhabited
     More specfically, determines if there exists a subtype of the intersection of the two types, other than the bottom type *)
-let rec has_intersection (t1 : structured_type) (t2 : structured_type) =
+let rec has_intersection (t1 : recursive_type) (t2 : recursive_type) =
   has_intersection_rec t1 t2 TypeVarPairSet.empty
 
-and has_intersection_rec (t1 : structured_type) (t2 : structured_type)
+and has_intersection_rec (t1 : recursive_type) (t2 : recursive_type)
     (encountered_type_vars : TypeVarPairSet.t) =
   let base_pairs = list_product t1.union t2.union in
   List.exists
@@ -66,8 +66,8 @@ and has_intersection_base_rec ((t1, c1) : base_type * recursive_context)
   (* Univeral quantifications intersect if the contents of them do *)
   | UnivQuantification univ_union1, UnivQuantification univ_union2 ->
       has_intersection_rec
-        (build_structured_type univ_union1 c1)
-        (build_structured_type univ_union2 c2)
+        (build_recursive_type univ_union1 c1)
+        (build_recursive_type univ_union2 c2)
         encountered_type_vars
   (* Handle cases where one of the types is a type variable, expanding that type out and recursing *)
   (* We recursively check recursive types against universal quantification, since the
@@ -80,14 +80,14 @@ and has_intersection_base_rec ((t1, c1) : base_type * recursive_context)
   | RecTypeVar n, UnivTypeVar _
   | RecTypeVar n, UnivQuantification _ ->
       has_intersection_rec (expand_type_var n c1)
-        (build_structured_type [ t2 ] c2)
+        (build_recursive_type [ t2 ] c2)
         encountered_type_vars
   | Label _, RecTypeVar n
   | Intersection _, RecTypeVar n
   | UnivTypeVar _, RecTypeVar n
   | UnivQuantification _, RecTypeVar n ->
       has_intersection_rec
-        (build_structured_type [ t1 ] c1)
+        (build_recursive_type [ t1 ] c1)
         (expand_type_var n c2) encountered_type_vars
   (* Finally, handle the potential loop case *)
   | RecTypeVar n, RecTypeVar m ->
@@ -106,14 +106,14 @@ and has_intersection_func
     (encountered_type_vars : TypeVarPairSet.t) =
   let args_intersect =
     has_intersection_rec
-      (build_structured_type arg1 c1)
-      (build_structured_type arg2 c2)
+      (build_recursive_type arg1 c1)
+      (build_recursive_type arg2 c2)
       encountered_type_vars
   in
   let returns_intersect =
     has_intersection_rec
-      (build_structured_type return1 c1)
-      (build_structured_type return2 c2)
+      (build_recursive_type return1 c1)
+      (build_recursive_type return2 c2)
       encountered_type_vars
   in
   (* Unary function intersection is inhabited if the argument types don't intersect (intersection

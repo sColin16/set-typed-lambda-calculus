@@ -6,13 +6,13 @@ open TypeOperations.Union
 open TypeOperations.Context
 open TermOperations.Helpers
 
-type typed_term = { term : term; stype : structured_type }
+type typed_term = { term : term; rtype : recursive_type }
 
-let build_typed_term (term : term) (stype : structured_type) = { term; stype }
+let build_typed_term (term : term) (rtype : recursive_type) = { term; rtype }
 let get_type_unsafe term = Option.get (get_type term)
 let typed_term term = build_typed_term term (get_type_unsafe term)
 
-let type_intersection (types : structured_type list) : structured_type =
+let type_intersection (types : recursive_type list) : recursive_type =
   let intersection =
     List.fold_left
       (fun acc_intersection next_type ->
@@ -23,7 +23,7 @@ let type_intersection (types : structured_type list) : structured_type =
   in
   base_type (Intersection intersection)
 
-let get_flat_union_type (union_types : structured_type list) : flat_union_type =
+let get_flat_union_type (union_types : recursive_type list) : flat_union_type =
   let union_type = type_union union_types in
   List.map
     (function
@@ -36,14 +36,14 @@ let get_flat_union_type (union_types : structured_type list) : flat_union_type =
 
 (* Constructs the Z-combinator for a function of a given type, a fixed-point
     combinator for call-by-value semantics *)
-let build_fix (arg_type : structured_type) (return_type : structured_type) =
+let build_fix (arg_type : recursive_type) (return_type : recursive_type) =
   (* First, construct a function type from the arg type to the return type, taking
      care to properly join the contexts of the two types *)
   let (new_arg_type, new_return_type), shared_context =
     get_unified_type_context_pair arg_type return_type
   in
   let func_type =
-    build_structured_type
+    build_recursive_type
       [ Intersection [ (new_arg_type, new_return_type) ] ]
       shared_context
   in
@@ -59,19 +59,19 @@ let build_fix (arg_type : structured_type) (return_type : structured_type) =
     typed_term
       (Abstraction
          [
-           ( build_structured_type
+           ( build_recursive_type
                [ Intersection [ (func_type.union, func_type.union) ] ]
                new_shared_context,
              Application
                ( Abstraction
                    [
-                     ( build_structured_type [ RecTypeVar rec_var_num ]
+                     ( build_recursive_type [ RecTypeVar rec_var_num ]
                          new_shared_context,
                        Application
                          ( Variable 1,
                            Abstraction
                              [
-                               ( build_structured_type new_arg_type
+                               ( build_recursive_type new_arg_type
                                    new_shared_context,
                                  binary_apply (Variable 1) (Variable 1)
                                    (Variable 0) );
@@ -79,13 +79,13 @@ let build_fix (arg_type : structured_type) (return_type : structured_type) =
                    ],
                  Abstraction
                    [
-                     ( build_structured_type [ RecTypeVar rec_var_num ]
+                     ( build_recursive_type [ RecTypeVar rec_var_num ]
                          new_shared_context,
                        Application
                          ( Variable 1,
                            Abstraction
                              [
-                               ( build_structured_type new_arg_type
+                               ( build_recursive_type new_arg_type
                                    new_shared_context,
                                  binary_apply (Variable 1) (Variable 1)
                                    (Variable 0) );
@@ -96,7 +96,7 @@ let build_fix (arg_type : structured_type) (return_type : structured_type) =
   fix
 
 (* Fixes a provided abstraction with the given arg and return type *)
-let fix (arg_type : structured_type) (return_type : structured_type)
+let fix (arg_type : recursive_type) (return_type : recursive_type)
     (term : term) =
   let fix_term = build_fix arg_type return_type in
   Application (fix_term.term, term)
