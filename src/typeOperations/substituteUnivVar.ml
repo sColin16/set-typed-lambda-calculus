@@ -49,8 +49,7 @@ let rec substitute_univ_var_type (with_type : recursive_type)
     with the with_type, respecting free variables and the complexities of recursive
     types *)
 and substitute_univ_var_type_rec (variable_num : int)
-    (with_type : recursive_type) (in_type : recursive_type) : recursive_type
-    =
+    (with_type : recursive_type) (in_type : recursive_type) : recursive_type =
   (* Perform initial pass over substitution to get information we use to safely perform substitution *)
   let substitution_profile = get_substitution_profile variable_num in_type in
 

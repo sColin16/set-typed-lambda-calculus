@@ -10,12 +10,10 @@ let test (name : string) (result : bool) =
   Printf.printf "%s: %s\n" (if result then "PASS" else "FAIL") name
 
 let b =
-  union_type
-    [ Label "A"; Intersection [ ([ Label "A" ], [ Label "B" ]) ] ]
+  union_type [ Label "A"; Intersection [ ([ Label "A" ], [ Label "B" ]) ] ]
 
 let c =
-  union_type
-    [ Intersection [ ([ Label "A" ], [ Label "B" ]) ]; Label "A" ]
+  union_type [ Intersection [ ([ Label "A" ], [ Label "B" ]) ]; Label "A" ]
 
 let a_label = label_type "A"
 let b_label = label_type "B"
@@ -62,19 +60,9 @@ let nested_b =
 let a_to_b = func_type (a_label.union, b_label.union)
 let a_to_c = func_type (a_label.union, c_label.union)
 let b_to_c = func_type (b_label.union, c_label.union)
-
-let ab_to_c =
-  func_type
-    ((type_union [ a_label; b_label ]).union, c_label.union)
-
-let a_to_bc =
-  func_type
-    (a_label.union, (type_union [ b_label; c_label ]).union)
-
-let a_to_cd =
-  func_type
-    (a_label.union, (type_union [ c_label; d_label ]).union)
-
+let ab_to_c = func_type ((type_union [ a_label; b_label ]).union, c_label.union)
+let a_to_bc = func_type (a_label.union, (type_union [ b_label; c_label ]).union)
+let a_to_cd = func_type (a_label.union, (type_union [ c_label; d_label ]).union)
 let joinable_a = a_to_b
 let joinable_b = b_to_c
 let unit_type = base_type (Intersection [])
@@ -113,8 +101,7 @@ let () = test "function reflexivity" (is_subtype one_type one_type)
 
 let () =
   test "label union subtyping A"
-    (is_subtype a_label
-       (type_union [ a_label; b_label; one_type; zero_type ]))
+    (is_subtype a_label (type_union [ a_label; b_label; one_type; zero_type ]))
 
 let () =
   test "label union subtyping B"
@@ -253,14 +240,11 @@ let () =
             func_type (a_to_b.union, a_label.union);
             func_type (b_to_c.union, a_label.union);
           ])
-       (func_type
-          ((type_intersection [ a_to_b; b_to_c ]).union, a_label.union)))
+       (func_type ((type_intersection [ a_to_b; b_to_c ]).union, a_label.union)))
 
 let () =
   test "basic application types"
-    (get_application_type
-       (func_type (a_label.union, b_label.union))
-       a_label
+    (get_application_type (func_type (a_label.union, b_label.union)) a_label
     = Some b_label)
 
 let () =
@@ -269,16 +253,13 @@ let () =
 
 let () =
   test "basic mismatched application"
-    (get_application_type
-       (func_type (b_label.union, b_label.union))
-       a_label
+    (get_application_type (func_type (b_label.union, b_label.union)) a_label
     = None)
 
 let () =
   test "contravariant function application A"
     (get_application_type
-       (func_type
-          ((type_union [ a_label; b_label ]).union, c_label.union))
+       (func_type ((type_union [ a_label; b_label ]).union, c_label.union))
        a_label
     = Some c_label)
 
@@ -312,8 +293,7 @@ let () =
 let () =
   test "application fails when label in union"
     (get_application_type
-       (type_union
-          [ a_label; func_type (a_label.union, b_label.union) ])
+       (type_union [ a_label; func_type (a_label.union, b_label.union) ])
        a_label
     = None)
 
@@ -355,7 +335,6 @@ let () =
     (get_type
        (Abstraction
           [
-            (a_label, Variable 0);
-            (type_union [ a_label; b_label ], Variable 0);
+            (a_label, Variable 0); (type_union [ a_label; b_label ], Variable 0);
           ])
     = None)

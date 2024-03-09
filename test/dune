@@ -1,12 +1,5 @@
 (tests
- (names
-  base
-  boolean
-  mixed
-  modularArithmetic
-  polymorphism
-  recursive
-  unions)
+ (names base boolean mixed modularArithmetic polymorphism recursive unions)
  (libraries setTypedLambda setTypedLambdaExample))
 
 (env

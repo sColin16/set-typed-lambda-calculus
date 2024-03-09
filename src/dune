@@ -1,3 +1,9 @@
 (library
  (name setTypedLambda)
- (libraries metatypes termTypes typeOperations termOperations common stringUtils))
+ (libraries
+  metatypes
+  termTypes
+  typeOperations
+  termOperations
+  common
+  stringUtils))

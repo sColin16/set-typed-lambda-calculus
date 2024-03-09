@@ -44,7 +44,8 @@ let get_type_in_context (t : recursive_type)
   build_recursive_type new_union (recursive_context @ new_context)
 
 (* Converts a pair of recursive types into a pair of union types that share a context *)
-let get_unified_type_context_pair (typea: recursive_type) (typeb: recursive_type) =
+let get_unified_type_context_pair (typea : recursive_type)
+    (typeb : recursive_type) =
   let recontextualized_typeb = get_type_in_context typeb typea.context in
   let new_typeb = recontextualized_typeb.union in
   ((typea.union, new_typeb), recontextualized_typeb.context)
@@ -55,30 +56,47 @@ let get_unified_type_context (types : recursive_type list) =
   let new_unions_rev, new_context =
     List.fold_left
       (fun (acc_union, acc_context) next_type ->
-        let recontextualized_next_union = get_type_in_context next_type acc_context in
+        let recontextualized_next_union =
+          get_type_in_context next_type acc_context
+        in
         let new_acc_union = recontextualized_next_union.union :: acc_union in
         let new_acc_context = recontextualized_next_union.context in
         (new_acc_union, new_acc_context))
-      ([], []) types in
+      ([], []) types
+  in
   (* We must reverse the list of unions since we fold left but want to keep the types in the right order *)
   let new_unions = List.rev new_unions_rev in
-  new_unions, new_context
+  (new_unions, new_context)
 
 (* TODO: consider writing more dedicated logic for this rather than the showving intermediate into intersection *)
 (* Takes a list of arg types and their corresponding body types, and joined them into
    a single recursive type for the intersection of the functions *)
-let unify_function_types (arg_types: recursive_type list) (body_types: recursive_type list) =
+let unify_function_types (arg_types : recursive_type list)
+    (body_types : recursive_type list) =
   (* First, build individual unary function types for each arg/body pair *)
-  let unary_types = List.map2 (fun arg_type body_type ->
-    let (new_arg_type, new_body_type), new_context = get_unified_type_context_pair arg_type body_type in
-    build_recursive_type [ Intersection [(new_arg_type, new_body_type )]] new_context
-  ) arg_types body_types in
+  let unary_types =
+    List.map2
+      (fun arg_type body_type ->
+        let (new_arg_type, new_body_type), new_context =
+          get_unified_type_context_pair arg_type body_type
+        in
+        build_recursive_type
+          [ Intersection [ (new_arg_type, new_body_type) ] ]
+          new_context)
+      arg_types body_types
+  in
   (* Then, rectonextualize all of them so we can prepare to join them into a single type *)
   let new_unary_unions, new_context = get_unified_type_context unary_types in
   (* Then destructure all of the unary types to build a single intersection type *)
-  let unary_list = List.fold_left (fun acc_func_types next_union ->
-    match next_union with
-    | [ Intersection [ next_unary ]] -> next_unary::acc_func_types
-    | _ -> raise (Failure "there was a problem destructuring the unary function types")
-  ) [] new_unary_unions in
+  let unary_list =
+    List.fold_left
+      (fun acc_func_types next_union ->
+        match next_union with
+        | [ Intersection [ next_unary ] ] -> next_unary :: acc_func_types
+        | _ ->
+            raise
+              (Failure
+                 "there was a problem destructuring the unary function types"))
+      [] new_unary_unions
+  in
   build_recursive_type [ Intersection unary_list ] new_context

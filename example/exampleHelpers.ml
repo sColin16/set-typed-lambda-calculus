@@ -96,7 +96,7 @@ let build_fix (arg_type : recursive_type) (return_type : recursive_type) =
   fix
 
 (* Fixes a provided abstraction with the given arg and return type *)
-let fix (arg_type : recursive_type) (return_type : recursive_type)
-    (term : term) =
+let fix (arg_type : recursive_type) (return_type : recursive_type) (term : term)
+    =
   let fix_term = build_fix arg_type return_type in
   Application (fix_term.term, term)

@@ -37,7 +37,7 @@ and substitute_in_term (term : term) (env : environment) (depth : int) =
   | Application (left_term, right_term) ->
       Application
         ( substitute_in_term left_term env depth,
-          substitute_in_term right_term env depth)
+          substitute_in_term right_term env depth )
   (* If a variable references a free variable, we pull it from the env, otherwise, leave it
      because it references a bound variable within this abstraction *)
   | Variable num ->
@@ -45,9 +45,7 @@ and substitute_in_term (term : term) (env : environment) (depth : int) =
       else value_to_term (List.nth env (num - depth))
   (* Universal quantifiers are substituted recursively *)
   | UnivQuantifier inner_term ->
-    UnivQuantifier (substitute_in_term inner_term env depth)
+      UnivQuantifier (substitute_in_term inner_term env depth)
   (* Universal application requires a substitution in the term, but leaves the type the same *)
   | UnivApplication (inner_term, inner_type) ->
-    UnivApplication
-    ( substitute_in_term inner_term env depth,
-      inner_type)
+      UnivApplication (substitute_in_term inner_term env depth, inner_type)

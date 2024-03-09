@@ -63,7 +63,9 @@ let rec term_to_string (term : term) =
   | UnivQuantifier inner_term ->
       Printf.sprintf "\\T.{%s}" (term_to_string inner_term)
   | UnivApplication (inner_term, inner_type) ->
-      Printf.sprintf "(%s) [%s]" (term_to_string inner_term) (type_to_string inner_type)
+      Printf.sprintf "(%s) [%s]"
+        (term_to_string inner_term)
+        (type_to_string inner_type)
 
 and branch_to_string (branch_type, branch_body) =
   Printf.sprintf "%s:%s"

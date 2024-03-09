@@ -34,26 +34,27 @@ let opt_list_to_list_opt (input : 'a option list) : 'a list option =
 
 type 'a tuple = 'a list
 
-let rec multi_list_product (nested_list: 'a list tuple): 'a tuple list =
-  let rec helper (acc: 'a tuple list) (l1: 'a list) (l2: 'a list tuple) =
-    match l1, l2 with
+let rec multi_list_product (nested_list : 'a list tuple) : 'a tuple list =
+  let rec helper (acc : 'a tuple list) (l1 : 'a list) (l2 : 'a list tuple) =
+    match (l1, l2) with
     | [], _ | _, [] -> acc
-    | h1::t1, h2::t2 ->
-      let acc = (h1::h2)::acc in
-      let acc = helper acc t1 l2 in
-      helper acc [ h1 ] t2
-  in match nested_list with
+    | h1 :: t1, h2 :: t2 ->
+        let acc = (h1 :: h2) :: acc in
+        let acc = helper acc t1 l2 in
+        helper acc [ h1 ] t2
+  in
+  match nested_list with
   | [] -> []
-  | [l1] -> List.map (fun x -> [x]) l1
-  | l1::tail ->
-    let tail_product = multi_list_product tail in
-    helper [] l1 tail_product
+  | [ l1 ] -> List.map (fun x -> [ x ]) l1
+  | l1 :: tail ->
+      let tail_product = multi_list_product tail in
+      helper [] l1 tail_product
 
-let short_circuit_and (exp1: unit -> bool) (exp2: unit -> bool) =
+let short_circuit_and (exp1 : unit -> bool) (exp2 : unit -> bool) =
   if exp1 () then exp2 () else false
 
-let short_circuit_or (exp1: unit -> bool) (exp2: unit -> bool) =
-  if exp1() then true else exp2 ()
+let short_circuit_or (exp1 : unit -> bool) (exp2 : unit -> bool) =
+  if exp1 () then true else exp2 ()
 
-let map_pair (func: 'a -> 'b) (first, second: 'a * 'a): 'b * 'b =
-  (func first), (func second)
+let map_pair (func : 'a -> 'b) ((first, second) : 'a * 'a) : 'b * 'b =
+  (func first, func second)

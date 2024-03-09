@@ -7,8 +7,8 @@ open TypeOperations.SubstituteUnivVar
 
 (* Substitutes the [with_type] into the [in_term] for universal type variables referencing
    the universal quantification at this level (0, or higher if nested within another universal quantifications) *)
-let rec substitute_univ_var_term (with_type : recursive_type) (in_term : term)
-    : term =
+let rec substitute_univ_var_term (with_type : recursive_type) (in_term : term) :
+    term =
   (* Shift the universal type indices in the argument by one since it is about to be substituted into a universal quantification,
      where their binding quantification is one further away *)
   let shifted_with_type = shift_univ_var_type with_type 1 in
