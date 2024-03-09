@@ -30,6 +30,7 @@ Here are some of the language constructs Set-Typed Lambda Calculus can represent
   - Including recursive functions
 - Classes
 - Polymoprhic data structures (e.g. lists, sets)
+- Existential types (e.g. ML modules)
 
 Typed lambda calculi typically represent sum and product type as first-class
 language constructs, which have specialized semantics and typing rules. For
@@ -58,7 +59,6 @@ subtype of the optional type, which isn't typically the case in other languages
 ### Core Language Features
 Features that are core parts of the calculus, from which more advanced
 constructs can be built
-- Existential type quantification to enable ML-style modules (as a derived )
 - Bounded polymorphism to assert properties of universal and existentially
 quantified types
 - Intersections of quantifiers, as a generalization of abstraction
@@ -74,7 +74,7 @@ provide familiar language constructs
 - Let constructs to enable more intuitively expressive programs
   - These simply provide syntactic sugar over abstractions
 - Type ascription to abstract details of a type away and support information hiding
-- Type aliases for more expssiveness surrounding types
+- Type aliases for more expressiveness surrounding types
 - Effect systems to augment the type system and express when exceptions are
   thrown or impure operations occur
 - Type inference to avoid the requirement for type annotations everywhere
