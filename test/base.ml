@@ -1,8 +1,8 @@
-open LambdaCalculus.Structured.Metatypes
-open LambdaCalculus.Structured.TermOperations.Typing
-open LambdaCalculus.Structured.TypeOperations.Subtype
-open LambdaCalculus.Structured.TypeOperations.Intersection
-open LambdaCalculus.StructuredHelpers
+open Metatypes
+open TermOperations.Typing
+open TypeOperations.Subtype
+open TypeOperations.Intersection
+open SetTypedLambdaExample.ExampleHelpers
 open TypeOperations.Union
 open TypeOperations.Create
 

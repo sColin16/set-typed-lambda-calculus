@@ -1,8 +1,8 @@
-open Structured.Metatypes
-open Structured.TermTypes
-open Structured.TypeOperations.Create
-open Structured.TermOperations.Typing
-open Structured.TypeOperations.Union
+open Metatypes
+open TermTypes
+open TypeOperations.Create
+open TermOperations.Typing
+open TypeOperations.Union
 open TypeOperations.Context
 open TermOperations.Helpers
 

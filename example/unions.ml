@@ -1,6 +1,6 @@
-open Structured.TermTypes
-open StructuredHelpers
-open StructuredBool
+open TermTypes
+open ExampleHelpers
+open Boolean
 open TypeOperations.Union
 open TypeOperations.Create
 open TermOperations.Helpers

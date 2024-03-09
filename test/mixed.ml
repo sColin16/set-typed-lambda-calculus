@@ -1,10 +1,10 @@
-open LambdaCalculus.Structured.TypeOperations.Subtype
-open LambdaCalculus.Structured.TypeOperations.Union
-open LambdaCalculus.StructuredArithmetic
-open LambdaCalculus.StructuredBool
-open LambdaCalculus.StructuredMixed
-open LambdaCalculus.StructuredHelpers
-open LambdaCalculus.TestHelpers
+open TypeOperations.Subtype
+open TypeOperations.Union
+open SetTypedLambdaExample.ModularArithmetic
+open SetTypedLambdaExample.Boolean
+open SetTypedLambdaExample.Mixed
+open SetTypedLambdaExample.ExampleHelpers
+open TestHelpers
 open TypeOperations.Create
 
 let is_even_odd_type_expected =

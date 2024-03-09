@@ -1,10 +1,10 @@
-open LambdaCalculus.Structured.TermOperations.Eval
-open LambdaCalculus.Structured.TypeOperations.Subtype
-open LambdaCalculus.Structured.TypeOperations.Intersection
-open LambdaCalculus.StructuredBool
-open LambdaCalculus.StructuredUnions
-open LambdaCalculus.StructuredHelpers
-open LambdaCalculus.Structured.TermOperations.ValToTerm
+open TermOperations.Eval
+open TypeOperations.Subtype
+open TypeOperations.Intersection
+open SetTypedLambdaExample.Boolean
+open SetTypedLambdaExample.Unions
+open SetTypedLambdaExample.ExampleHelpers
+open TermOperations.ValToTerm
 open TypeOperations.Union
 open TermOperations.Helpers
 

@@ -1,6 +1,6 @@
-open LambdaCalculus.Structured.TypeOperations.Subtype
-open LambdaCalculus.StructuredArithmetic
-open LambdaCalculus.TestHelpers
+open TypeOperations.Subtype
+open SetTypedLambdaExample.ModularArithmetic
+open TestHelpers
 open TermOperations.Helpers
 
 let () =

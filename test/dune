@@ -1,15 +1,13 @@
 (tests
  (names
-  lambdaCalculusTest
-  simpleTypedLambda
-  structuredLambdaTest
-  structuredLambdaArithmetic
-  structuredLambdaBoolean
-  structuredLambdaMixed
-  structuredLambdaRecursive
-  structuredLambdaUnions
-  structuredLambdaPoly)
- (libraries lambdaCalculus))
+  base
+  boolean
+  mixed
+  modularArithmetic
+  polymorphism
+  recursive
+  unions)
+ (libraries setTypedLambda setTypedLambdaExample))
 
 (env
  (dev

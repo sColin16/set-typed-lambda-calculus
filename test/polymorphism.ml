@@ -1,14 +1,14 @@
-open LambdaCalculus.StructuredPoly
-open LambdaCalculus.StructuredBool
-open LambdaCalculus.Structured.TypeOperations.Subtype
-open LambdaCalculus.Structured.Metatypes
-open LambdaCalculus.StructuredHelpers
-open LambdaCalculus.StructuredRecursive
+open SetTypedLambdaExample.Polymorphism
+open SetTypedLambdaExample.Boolean
+open TypeOperations.Subtype
+open Metatypes
+open SetTypedLambdaExample.ExampleHelpers
+open SetTypedLambdaExample.Recursive
 open TypeOperations.Create
 open TypeOperations.Intersection
 open TermTypes
 open TypeOperations.MapType
-open LambdaCalculus.TestHelpers
+open TestHelpers
 open TermOperations.Helpers
 
 let univ_quantify_union (union : union_type) = [ UnivQuantification union ]

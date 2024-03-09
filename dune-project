@@ -1,11 +1,11 @@
 (lang dune 3.7)
 
-(name lambdaCalculus)
+(name setTypedLambdaCalculus)
 
 (generate_opam_files true)
 
 (source
- (github sColin16/structured-lambda))
+ (github sColin16/set-typed-lambda-calculus))
 
 (authors "Colin Siles")
 

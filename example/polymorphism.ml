@@ -1,11 +1,11 @@
-open Structured.Metatypes
-open Structured.TermTypes
-open Structured.TypeOperations.Create
+open Metatypes
+open TermTypes
+open TypeOperations.Create
 open TypeOperations.Helpers
 open TypeOperations.Context
-open StructuredHelpers
-open StructuredBool
-open StructuredRecursive
+open ExampleHelpers
+open Boolean
+open Recursive
 open TermOperations.Helpers
 open TypeOperations.MapType
 

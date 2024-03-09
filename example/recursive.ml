@@ -1,9 +1,9 @@
-open Structured.Metatypes
-open Structured.TermTypes
-open Structured.TypeOperations.Create
+open Metatypes
+open TermTypes
+open TypeOperations.Create
 open TypeOperations.Union
-open StructuredHelpers
-open StructuredBool
+open ExampleHelpers
+open Boolean
 open TermOperations.Helpers
 
 let name = typed_term (Const "Name")

@@ -1,6 +1,6 @@
-open StructuredHelpers
-open StructuredArithmetic
-open StructuredBool
+open ExampleHelpers
+open ModularArithmetic
+open Boolean
 open TypeOperations.Union
 open TypeOperations.Create
 open TermOperations.Helpers

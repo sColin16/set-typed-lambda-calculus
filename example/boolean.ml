@@ -1,4 +1,4 @@
-open StructuredHelpers
+open ExampleHelpers
 open TypeOperations.Union
 open TypeOperations.Create
 

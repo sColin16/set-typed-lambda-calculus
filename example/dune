@@ -1,0 +1,3 @@
+(library
+ (name setTypedLambdaExample)
+ (libraries setTypedLambda))

@@ -1,6 +1,6 @@
-open LambdaCalculus.Structured.TypeOperations.Subtype
-open LambdaCalculus.StructuredBool
-open LambdaCalculus.TestHelpers
+open TypeOperations.Subtype
+open SetTypedLambdaExample.Boolean
+open TestHelpers
 open TermOperations.Helpers
 
 let () =
