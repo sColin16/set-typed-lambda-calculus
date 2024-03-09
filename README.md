@@ -13,10 +13,10 @@ following features:
 - Structural subtyping
 
 The combination of these features, particularly union and intersection types,
-creates a powerful type system whose types behave like sets, which makes for
-an intuitive type system. The type system can represent a wide range of common
-programming language constructs, but at a more fundamental level, which allows
-for some interesting properties.
+creates an intuitive and powerful type system whose types behave like sets. The
+type system can represent a wide range of common programming language
+constructs, but at a more fundamental level, which allows for some interesting
+properties.
 
 Here are some of the language constructs Set-Typed Lambda Calculus can represent:
 - Booleans
@@ -26,8 +26,7 @@ Here are some of the language constructs Set-Typed Lambda Calculus can represent
 - Nominative types (i.e. subtyping without structural typing properties)
 - Integers/strings of arbitrary size
 - Functions
-  - Including overloaded functions (ad-hoc polymorphism)
-  - Including recursive functions
+  - Including recursive function and overloaded functions (ad-hoc polymorphism)
 - Classes
 - Polymoprhic data structures (e.g. lists, sets)
 - Existential types (e.g. ML modules)
@@ -62,8 +61,8 @@ constructs can be built
 - Bounded polymorphism to assert properties of universal and existentially
 quantified types
 - Intersections of quantifiers, as a generalization of abstraction
-intersections, and as a means to implement provide different implementations for
-polymoprhic types, depending on the argument type
+intersections, and as a means to provide different implementations for
+polymoprhic terms, depending on the argument type
 - Higher kinded-types and type-level programming
 
 ### External Language Features
