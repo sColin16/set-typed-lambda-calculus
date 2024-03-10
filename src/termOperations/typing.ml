@@ -8,6 +8,7 @@ open TypeOperations.Subtype
 open TypeOperations.Context
 open TypeOperations.Union
 open TypeOperations.SubstituteUnivVar
+open TypeOperations.MapType
 
 type var_type_env = recursive_type list
 
@@ -19,6 +20,8 @@ and get_type_rec (term : term) (var_type_env : var_type_env) :
   match term with
   (* Constants always have label types *)
   | Const name -> Some (label_type name)
+  (* The type of a variable is based on the type of the argument in the abstraction defining it *)
+  | Variable var_num -> List.nth_opt var_type_env var_num
   (* Use the helper function to determine if an application is well-typed *)
   | Application (t1, t2) ->
       let left_type = get_type_rec t1 var_type_env in
@@ -38,22 +41,19 @@ and get_type_rec (term : term) (var_type_env : var_type_env) :
 
         (* Unify the branch types into a single type for the entire abstraction *)
         Option.map unify_branch_types branch_types_opt
-
-  (* The type of a variable is based on the type of the argument in the abstraction defining it *)
-  | Variable var_num -> List.nth_opt var_type_env var_num
-  (* Determine the type within the quantifier, then merge the recursive contexts and build the appropriate union type *)
-  | UnivQuantifier inner_term ->
-      let inner_type_opt = get_type_rec inner_term var_type_env in
-      Option.map
-        (fun inner_type ->
-          build_recursive_type
-            [ UnivQuantification inner_type.union ]
-            inner_type.context)
-        inner_type_opt
   | UnivApplication (inner_term, inner_type) ->
       let inner_term_type_opt = get_type_rec inner_term var_type_env in
       Option.bind inner_term_type_opt (fun inner_term_type ->
           get_univ_application_type inner_term_type inner_type)
+  (* Determine the type within the quantifier, then nest the type inside the quantifier type *)
+  | UnivQuantifier inner_term ->
+      let inner_type_opt = get_type_rec inner_term var_type_env in
+      Option.map
+        (fun inner_type ->
+          map_type
+            (fun inner_type_union -> [ UnivQuantification inner_type_union ])
+            inner_type)
+        inner_type_opt
 
 and abstraction_branches_disjoint (branches : (recursive_type * term) list) :
     bool =
