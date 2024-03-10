@@ -22,25 +22,15 @@ and get_type_rec (term : term) (var_type_env : var_type_env) :
   | Const name -> Some (label_type name)
   (* The type of a variable is based on the type of the argument in the abstraction defining it *)
   | Variable var_num -> List.nth_opt var_type_env var_num
-  (* Use the helper function to determine if an application is well-typed *)
   | Application (t1, t2) ->
       let left_type = get_type_rec t1 var_type_env in
       let right_type = get_type_rec t2 var_type_env in
       flat_map_opt2 get_application_type left_type right_type
-  (* Abstractions are well-typed if their argument types don't intersect
-     The return types of the body can be inferred recursively from the argument type *)
   | Abstraction branches ->
       (* An abstraction is ill-typed if any of its arguments intersect *)
       let branches_disjoint = abstraction_branches_disjoint branches in
       if not branches_disjoint then None
-      else
-        (* Determine the type for each branch *)
-        let branch_types_opt =
-          list_map_opt (get_branch_type var_type_env) branches
-        in
-
-        (* Unify the branch types into a single type for the entire abstraction *)
-        Option.map unify_branch_types branch_types_opt
+      else get_abstraction_type var_type_env branches
   | UnivApplication (inner_term, inner_type) ->
       let inner_term_type_opt = get_type_rec inner_term var_type_env in
       Option.bind inner_term_type_opt (fun inner_term_type ->
@@ -55,6 +45,62 @@ and get_type_rec (term : term) (var_type_env : var_type_env) :
             inner_type)
         inner_type_opt
 
+(** [get_application_type abs_type arg_type] determines the resulting type of
+    applying a term of type [arg_type] to a term of type [abs_type], if
+    the abstraction can be applied to the argument *)
+and get_application_type (abs_type : recursive_type) (arg_type : recursive_type)
+    : recursive_type option =
+  (* Flatten the abstraction type to remove recursive type variables *)
+  let abs_type_flat = flatten_union abs_type.union abs_type.context in
+  (* The argument should be applicable to any function in the union, so acquire the type of applying the arg to each base type *)
+  let return_types_opt =
+    list_map_opt
+      (fun abs_type_base ->
+        get_application_type_base (abs_type_base, abs_type.context) arg_type)
+      abs_type_flat
+  in
+  (* Join all of the return types into a single union type, add the context *)
+  (* Return types that come back have context abs_type.context, since abstractions determine their return types *)
+  Option.map
+    (fun return_types ->
+      build_recursive_type (List.flatten return_types) abs_type.context)
+    return_types_opt
+
+and get_application_type_base
+    ((abs_type_base, abs_context) : flat_base_type * recursive_context)
+    (arg_type : recursive_type) : union_type option =
+  match abs_type_base with
+  (* Label types, universal quantifications, and their variables cannot be applied *)
+  | FLabel _ | FUnivTypeVar _ | FUnivQuantification _ -> None
+  (* An application against a function type is well-typed if the abstraction accepts a supertype of the argument type.
+     The return type is the union of all return types that the argument might match with *)
+  | FIntersection branches ->
+      let abs_arg_exhaustive =
+        get_abs_args_exhaustive (branches, abs_context) arg_type
+      in
+      if not abs_arg_exhaustive then None
+      else
+        let return_types =
+          extract_return_types (branches, abs_context) arg_type
+        in
+        Some return_types
+
+(* Determines if the branches of an abstraction form a supertype of the argument type*)
+and get_abs_args_exhaustive
+    ((branches, branches_context) : unary_function list * recursive_context)
+    (arg_type : recursive_type) =
+  let composite_arg_type = extract_composite_args branches in
+  is_subtype arg_type (build_recursive_type composite_arg_type branches_context)
+
+and extract_return_types
+    ((branches, branches_context) : unary_function list * recursive_context)
+    (arg_type : recursive_type) =
+  List.fold_left
+    (fun acc (func_arg, func_return) ->
+      let func_arg_type = build_recursive_type func_arg branches_context in
+      if has_intersection arg_type func_arg_type then acc @ func_return else acc)
+    [] branches
+
 and abstraction_branches_disjoint (branches : (recursive_type * term) list) :
     bool =
   let arg_types = extract_first branches in
@@ -63,6 +109,14 @@ and abstraction_branches_disjoint (branches : (recursive_type * term) list) :
     not (List.exists (fun (arg1, arg2) -> has_intersection arg1 arg2) arg_pairs)
   in
   disjoint_args
+
+and get_abstraction_type (var_type_env : var_type_env)
+    (branches : (recursive_type * term) list) =
+  (* Determine the type for each branch *)
+  let branch_types_opt = list_map_opt (get_branch_type var_type_env) branches in
+
+  (* Unify the branch types into a single type for the entire abstraction *)
+  Option.map unify_branch_types branch_types_opt
 
 (* Determines the type for a single branch of an abstraction, in terms of the
     union types for the argument and return value, and their shared recursive
@@ -99,50 +153,6 @@ and unify_branch_types (branch_types : recursive_type list) =
   in
   let union_type = [ Intersection func_types ] in
   build_recursive_type union_type context
-
-(** [get_application_type func_type arg_type] determines the resulting type of
-    applying a term of type [arg_type] to a term of type [func_type], if
-    the function can be applied to the argument *)
-and get_application_type (func : recursive_type) (arg : recursive_type) :
-    recursive_type option =
-  (* Flatten the func type so only labels and intersection types remain *)
-  let func_flat = flatten_union func.union func.context in
-  (* The argument should be applicable to any function in the union, so acquire the type of applying the arg to each option *)
-  let return_types_opt =
-    list_map_opt
-      (fun func_option ->
-        get_application_option_type (func_option, func.context) arg)
-      func_flat
-  in
-  (* Return types that come back have context func.context, since abstractions determine their return types *)
-  (* Join all of the return types into a single union type, add the context *)
-  Option.map
-    (fun return_types ->
-      build_recursive_type (List.flatten return_types) func.context)
-    return_types_opt
-
-and get_application_option_type
-    ((func_option, context1) : flat_base_type * recursive_context)
-    (arg : recursive_type) : union_type option =
-  match func_option with
-  (* Label types, universal quantifications, and their variables cannot be applied *)
-  | FLabel _ | FUnivTypeVar _ | FUnivQuantification _ -> None
-  (* An application against a function type is well-typed if the function accepts at least as many arguments.
-     The return type is the union of all return types that the argument might match with *)
-  | FIntersection functions ->
-      let func_params = extract_composite_args functions in
-      let exhaustive_arg_coverage =
-        is_subtype arg (build_recursive_type func_params context1)
-      in
-      if not exhaustive_arg_coverage then None
-      else
-        Some
-          (List.fold_left
-             (fun acc (func_arg, func_return) ->
-               if has_intersection arg (build_recursive_type func_arg context1)
-               then acc @ func_return
-               else acc)
-             [] functions)
 
 and get_univ_application_type (quantifier : recursive_type)
     (type_arg : recursive_type) : recursive_type option =
