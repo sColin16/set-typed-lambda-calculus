@@ -7,20 +7,8 @@ open TypeOperations.WellFounded
 open SetTypedLambdaExample.Recursive
 open SetTypedLambdaExample.Boolean
 open SetTypedLambdaExample.ExampleHelpers
-open TermOperations.Eval
-open TermOperations.ValToTerm
 open TermTypes
-
-let test (name : string) (result : bool) =
-  Printf.printf "%s: %s\n" (if result then "PASS" else "FAIL") name
-
-let is_equivalent_type (t1 : recursive_type) (t2 : recursive_type) =
-  is_subtype t1 t2 && is_subtype t2 t1
-
-let is_strict_subtype (t1 : recursive_type) (t2 : recursive_type) =
-  is_subtype t1 t2 && not (is_subtype t2 t1)
-
-let evaluates_to term value = value_to_term (eval term) = value
+open TestHelpers
 
 (* Generate a term to check if two numbers are equal, in the lambda calculus *)
 let numeric_terms_equal_term num1 num2 =

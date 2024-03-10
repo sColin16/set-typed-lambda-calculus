@@ -1,16 +1,10 @@
-open TermOperations.Eval
 open TypeOperations.Subtype
 open TypeOperations.Intersection
 open SetTypedLambdaExample.Boolean
 open SetTypedLambdaExample.Unions
 open SetTypedLambdaExample.ExampleHelpers
-open TermOperations.ValToTerm
 open TypeOperations.Union
-
-let test (name : string) (result : bool) =
-  Printf.printf "%s: %s\n" (if result then "PASS" else "FAIL") name
-
-let evaluates_to term value = value_to_term (eval term) = value
+open TestHelpers
 
 let () =
   test "Exhaustive function coverage of union A"
@@ -130,16 +124,32 @@ let () =
     (is_subtype decrement_three_bit.rtype unary_num_type)
 
 let () =
-  test "Add is a bunary number operation"
+  test "Add is a binary number operation"
     (is_subtype add_three_bit.rtype binary_num_type)
 
 let () =
+  test "Increment zero"
+    (evaluates_to
+       (Application (increment_three_bit.term, zero.term))
+       one.term)
+
+let () =
+  test "zero plus one"
+    (evaluates_to
+       (binary_apply add_three_bit.term one.term zero.term)
+       one.term)
+
+let () =
   test "one plus one"
-    (evaluates_to (binary_apply add_three_bit.term one.term one.term) two.term)
+    (evaluates_to
+       (binary_apply add_three_bit.term one.term one.term)
+       two.term)
 
 let () =
   test "two plus two"
-    (evaluates_to (binary_apply add_three_bit.term two.term two.term) four.term)
+    (evaluates_to
+       (binary_apply add_three_bit.term two.term two.term)
+       four.term)
 
 let () =
   test "three plus seven"
