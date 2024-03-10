@@ -24,7 +24,7 @@ and eval_rec (term : term) (env : environment) : value =
       | Closure (left_branches, left_env) ->
           let right_value = eval_rec right_term env in
           let resolved_branch =
-            resolve_branch left_branches (value_to_term right_value)
+            resolve_branch left_branches right_value
           in
           eval_rec resolved_branch (right_value :: left_env)
       | VConst _ -> raise (Invalid_argument "Cannot apply a constant")
@@ -49,9 +49,11 @@ and eval_rec (term : term) (env : environment) : value =
 
 (* Determines the branch of the abstraction to execute, based on the type of the argument *)
 and resolve_branch branches argument =
+  (* If there's only one branch, use it, since we assume type-checking confirmed type safety *)
+  if List.length branches = 1 then snd (List.hd branches) else
   (* TODO: can I always associate a base type with arguments to guarantee I can determine
      the appropriate branch, without needing to recompute each time? *)
-  let argument_type = Option.get (get_type argument) in
+  let argument_type = Option.get (get_type (value_to_term argument)) in
   let _, resolved_branch =
     List.find
       (fun (branch_type, _) -> is_subtype argument_type branch_type)
