@@ -24,32 +24,24 @@ and get_type_rec (term : term) (var_type_env : var_type_env) :
       let left_type = get_type_rec t1 var_type_env in
       let right_type = get_type_rec t2 var_type_env in
       flat_map_opt2 get_application_type left_type right_type
-  (* Abstractions are well-typed if their argument types don't match
+  (* Abstractions are well-typed if their argument types don't intersect
      The return types of the body can be inferred recursively from the argument type *)
-  | Abstraction definitions ->
+  | Abstraction branches ->
       (* An abstraction is ill-typed if any of its arguments intersect *)
-      let arg_types = extract_first definitions in
-      let arg_pairs = self_pairs arg_types in
-      let disjoint_args =
-        not
-          (List.exists
-             (fun (arg1, arg2) -> has_intersection arg1 arg2)
-             arg_pairs)
-      in
-      if not disjoint_args then None
+      let branches_disjoint = abstraction_branches_disjoint branches in
+      if not branches_disjoint then None
       else
-        let arg_types = List.map (fun (arg_type, _) -> arg_type) definitions in
-        let body_opt_types =
-          List.map
-            (fun (arg_type, body) ->
-              let new_var_type_env = arg_type :: var_type_env in
-              get_type_rec body new_var_type_env)
-            definitions
+        (* Determine the type for each branch *)
+        let branch_opt_types =
+          List.map (get_branch_type var_type_env) branches
         in
-        let body_types_opt = opt_list_to_list_opt body_opt_types in
-        Option.map
-          (fun body_types -> unify_function_types arg_types body_types)
-          body_types_opt
+
+        (* Aggregate, if any branch was ill-typed, the entire term is will-typed *)
+        let branch_types_opt = opt_list_to_list_opt branch_opt_types in
+
+        (* Unify the branch types into a single type for the entire abstraction *)
+        Option.map unify_branch_types branch_types_opt
+
   (* The type of a variable is based on the type of the argument in the abstraction defining it *)
   | Variable var_num -> List.nth_opt var_type_env var_num
   (* Determine the type within the quantifier, then merge the recursive contexts and build the appropriate union type *)
@@ -63,11 +55,53 @@ and get_type_rec (term : term) (var_type_env : var_type_env) :
         inner_type_opt
   | UnivApplication (inner_term, inner_type) ->
       let inner_term_type_opt = get_type_rec inner_term var_type_env in
-      Option.join
-        (Option.map
-           (fun inner_term_type ->
-             get_univ_application_type inner_term_type inner_type)
-           inner_term_type_opt)
+      Option.bind inner_term_type_opt (fun inner_term_type ->
+          get_univ_application_type inner_term_type inner_type)
+
+and abstraction_branches_disjoint (branches : (recursive_type * term) list) :
+    bool =
+  let arg_types = extract_first branches in
+  let arg_pairs = self_pairs arg_types in
+  let disjoint_args =
+    not (List.exists (fun (arg1, arg2) -> has_intersection arg1 arg2) arg_pairs)
+  in
+  disjoint_args
+
+(* Determines the type for a single branch of an abstraction, in terms of the
+    union types for the argument and return value, and their shared recursive
+    context *)
+and get_branch_type (var_type_env : var_type_env)
+    ((arg_type, body) : recursive_type * term) : recursive_type option =
+  (* Recursively determine the type of the body of the branch, based on the type of the argument *)
+  let body_type_env = arg_type :: var_type_env in
+  let body_type_opt = get_type_rec body body_type_env in
+
+  (* If the body type is defined, compute their unary function type *)
+  Option.map
+    (fun body_type ->
+      let (unified_arg_type, unified_body_type), context =
+        get_unified_type_context_pair arg_type body_type
+      in
+      build_recursive_type
+        [ Intersection [ (unified_arg_type, unified_body_type) ] ]
+        context)
+    body_type_opt
+
+and unify_branch_types (branch_types : recursive_type list) =
+  let unified_branch_types, context = get_unified_type_context branch_types in
+  let func_types =
+    List.fold_left
+      (fun acc_funcs unary_func ->
+        match unary_func with
+        | [ Intersection [ (arg_type, body_type) ] ] ->
+            (arg_type, body_type) :: acc_funcs
+        | _ ->
+            raise
+              (Failure "Error destructuring branch type: was not expected shape"))
+      [] unified_branch_types
+  in
+  let union_type = [ Intersection func_types ] in
+  build_recursive_type union_type context
 
 (** [get_application_type func_type arg_type] determines the resulting type of
     applying a term of type [arg_type] to a term of type [func_type], if

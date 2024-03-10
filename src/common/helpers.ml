@@ -1,7 +1,7 @@
 let list_product (list1 : 'a list) (list2 : 'b list) =
   List.flatten (List.map (fun x1 -> List.map (fun x2 -> (x1, x2)) list2) list1)
 
-(** Gets all pairs of items in the list, not in any paticular order, excluding pairs with the same index *)
+(** Gets all pairs of items in the list, not in any particular order, excluding pairs with the same index *)
 let self_pairs (list : 'a list) =
   let pair_list =
     List.flatten
