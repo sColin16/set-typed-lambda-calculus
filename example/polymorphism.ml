@@ -6,7 +6,6 @@ open TypeOperations.Context
 open ExampleHelpers
 open Boolean
 open Recursive
-open TermOperations.Helpers
 open TypeOperations.MapType
 
 let name_label = typed_term (Const "Name")

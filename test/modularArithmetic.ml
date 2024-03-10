@@ -1,7 +1,7 @@
-open TypeOperations.Subtype
 open SetTypedLambdaExample.ModularArithmetic
+open SetTypedLambdaExample.ExampleHelpers
+open TypeOperations.Subtype
 open TestHelpers
-open TermOperations.Helpers
 
 let () =
   test "increment is a unary num operator"

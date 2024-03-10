@@ -1,15 +1,14 @@
 open SetTypedLambdaExample.Polymorphism
 open SetTypedLambdaExample.Boolean
+open SetTypedLambdaExample.Recursive
+open SetTypedLambdaExample.ExampleHelpers
 open TypeOperations.Subtype
 open Metatypes
-open SetTypedLambdaExample.ExampleHelpers
-open SetTypedLambdaExample.Recursive
 open TypeOperations.Create
 open TypeOperations.Intersection
 open TermTypes
 open TypeOperations.MapType
 open TestHelpers
-open TermOperations.Helpers
 
 let univ_quantify_union (union : union_type) = [ UnivQuantification union ]
 

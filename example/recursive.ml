@@ -4,7 +4,6 @@ open TypeOperations.Create
 open TypeOperations.Union
 open ExampleHelpers
 open Boolean
-open TermOperations.Helpers
 
 let name = typed_term (Const "Name")
 let val_lambda = typed_term (Const "Val")

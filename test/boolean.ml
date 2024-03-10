@@ -1,7 +1,7 @@
-open TypeOperations.Subtype
 open SetTypedLambdaExample.Boolean
+open SetTypedLambdaExample.ExampleHelpers
+open TypeOperations.Subtype
 open TestHelpers
-open TermOperations.Helpers
 
 let () =
   test "identity is unary bool op"

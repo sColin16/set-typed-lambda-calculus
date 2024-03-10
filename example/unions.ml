@@ -3,7 +3,6 @@ open ExampleHelpers
 open Boolean
 open TypeOperations.Union
 open TypeOperations.Create
-open TermOperations.Helpers
 
 let split_unary_bool =
   base_type

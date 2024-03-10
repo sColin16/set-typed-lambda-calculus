@@ -1,7 +1,6 @@
 open ExampleHelpers
 open TypeOperations.Union
 open TypeOperations.Create
-open TermOperations.Helpers
 
 let zero = typed_term (Const "Zero")
 let one = typed_term (Const "One")

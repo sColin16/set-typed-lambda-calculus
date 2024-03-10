@@ -3,7 +3,6 @@ open ModularArithmetic
 open Boolean
 open TypeOperations.Union
 open TypeOperations.Create
-open TermOperations.Helpers
 
 let is_even_label = typed_term (Const "isEven")
 let is_odd_label = typed_term (Const "isOdd")

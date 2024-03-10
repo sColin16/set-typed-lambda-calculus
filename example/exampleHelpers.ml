@@ -4,9 +4,16 @@ open TypeOperations.Create
 open TermOperations.Typing
 open TypeOperations.Union
 open TypeOperations.Context
-open TermOperations.Helpers
 
 type typed_term = { term : term; rtype : recursive_type }
+
+(** Generates a term to apply two arguments to a function, for convenience *)
+let binary_apply (func : term) (arg1 : term) (arg2 : term) =
+  Application (Application (func, arg1), arg2)
+
+(** Generates a term to apply three arguments to a function, for convenience *)
+let trinary_apply (func : term) (arg1 : term) (arg2 : term) (arg3 : term) =
+  Application (Application (Application (func, arg1), arg2), arg3)
 
 let build_typed_term (term : term) (rtype : recursive_type) = { term; rtype }
 let get_type_unsafe term = Option.get (get_type term)

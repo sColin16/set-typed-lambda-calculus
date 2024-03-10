@@ -6,7 +6,6 @@ open SetTypedLambdaExample.Unions
 open SetTypedLambdaExample.ExampleHelpers
 open TermOperations.ValToTerm
 open TypeOperations.Union
-open TermOperations.Helpers
 
 let test (name : string) (result : bool) =
   Printf.printf "%s: %s\n" (if result then "PASS" else "FAIL") name

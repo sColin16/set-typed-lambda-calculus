@@ -10,7 +10,6 @@ open SetTypedLambdaExample.ExampleHelpers
 open TermOperations.Eval
 open TermOperations.ValToTerm
 open TermTypes
-open TermOperations.Helpers
 
 let test (name : string) (result : bool) =
   Printf.printf "%s: %s\n" (if result then "PASS" else "FAIL") name

@@ -1,6 +1,6 @@
-open ExampleHelpers
 open TypeOperations.Union
 open TypeOperations.Create
+open ExampleHelpers
 
 let true_lambda = typed_term (Const "True")
 let false_lambda = typed_term (Const "False")
