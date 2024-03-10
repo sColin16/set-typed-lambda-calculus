@@ -32,12 +32,9 @@ and get_type_rec (term : term) (var_type_env : var_type_env) :
       if not branches_disjoint then None
       else
         (* Determine the type for each branch *)
-        let branch_opt_types =
-          List.map (get_branch_type var_type_env) branches
+        let branch_types_opt =
+          list_map_opt (get_branch_type var_type_env) branches
         in
-
-        (* Aggregate, if any branch was ill-typed, the entire term is will-typed *)
-        let branch_types_opt = opt_list_to_list_opt branch_opt_types in
 
         (* Unify the branch types into a single type for the entire abstraction *)
         Option.map unify_branch_types branch_types_opt
@@ -112,19 +109,17 @@ and get_application_type (func : recursive_type) (arg : recursive_type) :
   let func_flat = flatten_union func.union func.context in
   (* The argument should be applicable to any function in the union, so acquire the type of applying the arg to each option *)
   let return_types_opt =
-    List.map
+    list_map_opt
       (fun func_option ->
         get_application_option_type (func_option, func.context) arg)
       func_flat
   in
-  (* Aggregate the return types - if any of them were none, the application is not well-typed *)
   (* Return types that come back have context func.context, since abstractions determine their return types *)
-  let return_types = opt_list_to_list_opt return_types_opt in
   (* Join all of the return types into a single union type, add the context *)
   Option.map
-    (fun return_types_concrete ->
-      build_recursive_type (List.flatten return_types_concrete) func.context)
-    return_types
+    (fun return_types ->
+      build_recursive_type (List.flatten return_types) func.context)
+    return_types_opt
 
 and get_application_option_type
     ((func_option, context1) : flat_base_type * recursive_context)
@@ -155,16 +150,14 @@ and get_univ_application_type (quantifier : recursive_type)
   let quantifier_flat = flatten_union quantifier.union quantifier.context in
   (* The type argument is applicable to any universal quantification in the union, so determine the types resulting
      from applying the type argument to each universal quantification in the union *)
-  let return_opt_types =
-    List.map
+  let return_types_opt =
+    list_map_opt
       (fun quant_option ->
         get_univ_application_option_type
           (quant_option, quantifier.context)
           type_arg)
       quantifier_flat
   in
-  (* Aggregate the return types - if any of them were none, the application is not well-typed *)
-  let return_types_opt = opt_list_to_list_opt return_opt_types in
   (* Combine all of the recursive types, merging both the unions and and contexts *)
   Option.map (fun return_types -> type_union return_types) return_types_opt
 

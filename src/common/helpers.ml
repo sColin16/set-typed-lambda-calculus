@@ -32,6 +32,12 @@ let opt_list_to_list_opt (input : 'a option list) : 'a list option =
   (* Reverse the list to maintain the order. Shouldn't really matter, but oh well *)
   Option.map List.rev list_opt
 
+(* Maps over a list with a function that returns an option, returning None if
+    any mapped element is None *)
+let list_map_opt (func: 'a -> 'b option) (list: 'a list): 'b list option =
+  let opt_list = List.map func list in
+  opt_list_to_list_opt opt_list
+
 type 'a tuple = 'a list
 
 let rec multi_list_product (nested_list : 'a list tuple) : 'a tuple list =
