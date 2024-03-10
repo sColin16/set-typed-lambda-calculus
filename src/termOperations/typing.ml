@@ -154,27 +154,29 @@ and unify_branch_types (branch_types : recursive_type list) =
   let union_type = [ Intersection func_types ] in
   build_recursive_type union_type context
 
-and get_univ_application_type (quantifier : recursive_type)
+and get_univ_application_type (quantifier_type : recursive_type)
     (type_arg : recursive_type) : recursive_type option =
-  (* Flatten the func type to get rid of recursive types *)
-  let quantifier_flat = flatten_union quantifier.union quantifier.context in
+  (* Flatten the func type to get rid of recursive type variables *)
+  let quantifier_type_flat =
+    flatten_union quantifier_type.union quantifier_type.context
+  in
   (* The type argument is applicable to any universal quantification in the union, so determine the types resulting
      from applying the type argument to each universal quantification in the union *)
   let return_types_opt =
     list_map_opt
-      (fun quant_option ->
-        get_univ_application_option_type
-          (quant_option, quantifier.context)
+      (fun quant_type_base ->
+        get_univ_application_type_base
+          (quant_type_base, quantifier_type.context)
           type_arg)
-      quantifier_flat
+      quantifier_type_flat
   in
   (* Combine all of the recursive types, merging both the unions and and contexts *)
   Option.map (fun return_types -> type_union return_types) return_types_opt
 
-and get_univ_application_option_type
-    ((func_option, context1) : flat_base_type * recursive_context)
+and get_univ_application_type_base
+    ((quant_type_base, quant_context) : flat_base_type * recursive_context)
     (type_arg : recursive_type) : recursive_type option =
-  match func_option with
+  match quant_type_base with
   (* Only universal quantification can have type applications
      Universal type variables may be instantiated with quantification (assuming impredicativity)
      but it's not guaranteed *)
@@ -183,5 +185,5 @@ and get_univ_application_option_type
   (* But for now, we just substitution in the inner type. The function handles shifting for us *)
   | FUnivQuantification inner_union_type ->
       (* Construct the complete inner type using the context *)
-      let inner_type = build_recursive_type inner_union_type context1 in
+      let inner_type = build_recursive_type inner_union_type quant_context in
       Some (substitute_univ_var_type type_arg inner_type)
